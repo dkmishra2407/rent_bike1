@@ -1,0 +1,38 @@
+@import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0");
+
+/* Sidebar Styles */
+.sidebar {
+  position: fixed;
+  left: 0;
+  height: 100vh; /* Full viewport height */
+  z-index: 1000; /* Make sure it stays on top of other content */
+  transition: width 0.3s ease; /* Smooth width transition on toggle */
+}
+
+.sidebar ul {
+  flex-grow: 1;
+  padding-top: 1rem;
+}
+
+.sidebar ul li {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  transition: background-color 0.2s ease;
+}
+
+.sidebar ul li:hover {
+  background-color: #24262f; /* Lighter shade on hover */
+}
+
+.sidebar button {
+  outline: none;
+  border: none;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+}
+
+.sidebar button:hover {
+  transform: scale(1.1); /* Slight grow on hover */
+}
