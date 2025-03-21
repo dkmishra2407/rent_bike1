@@ -1,6 +1,8 @@
 import React from 'react';
 import  Sidebar  from './componetns/sidebar/sidebar';
 // import Header from './componetns/header';
+import dotenv from 'dotenv';
+dotenv.config();
 import './App.css'
 import Stockinfo from './pages/stockinfo';
 function App() {

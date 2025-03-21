@@ -108,7 +108,7 @@ const Chart = () => {
   }, [days]);
 
   return (
-    <div className="chart-container w-3/5 ">
+    <div className="chart-container w-3/5">
        
        <div className='flex justify-between items-center'>
        {logo && <img src={logo} alt="logo" />}
@@ -117,7 +117,7 @@ const Chart = () => {
       <h2>{STOCK_SYMBOL} Stock Price Chart</h2>
       <p>Current Price: ${currentVal}</p>
       {timeSeriesData.length > 0 ? (
-        <LineChart width={600} height={300} data={timeSeriesData}>
+        <LineChart width={900} height={450} data={timeSeriesData}>
           <Line type="monotone" dataKey="price" stroke="#8884d8" />
           <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
           <XAxis dataKey="name" />
@@ -129,8 +129,11 @@ const Chart = () => {
         <p>Loading chart data...</p>
       )}
 
-      <div className="button-group flex gap-2">
+      <div className="button-group flex gap-2 ml-20">
+      <button className="btn btn-primary" onClick={() => handleButtonClick(7)}>1 Week</button>
+      {/* <button className="btn btn-primary" onClick={() => handleButtonClick(180)}>6 Months</button> */}
         <button className="btn btn-primary" onClick={() => handleButtonClick(10)}>10 Days</button>
+      <button className="btn btn-primary" onClick={() => handleButtonClick(21)}>3 Weeks</button>
         <button className="btn btn-primary" onClick={() => handleButtonClick(20)}>20 Days</button>
         <button className="btn btn-primary" onClick={() => handleButtonClick(30)}>30 Days</button>
         <button className="btn btn-primary" onClick={() => handleButtonClick(90)}>3 Months</button>

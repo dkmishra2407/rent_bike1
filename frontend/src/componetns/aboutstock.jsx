@@ -5,13 +5,13 @@ const AboutStock = ({ stockName }) => {
   const [data, setData] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   useEffect(() => {
     const fetchAboutData = async () => {
       try {
         setLoading(true);
         
-        const apiKey = 'AIzaSyAob0WQKtKQJltILvk3mchuYr-XuphVJWY';
+        const apiKey = process.env.REACT_APP_GENERATIVE_API_KEY || 'AIzaSyAob0WQKtKQJltILvk3mchuYr-XuphVJWY'
+        console.log(apiKey)
         if (!apiKey) {
           throw new Error("API key is missing. Check your .env file.");
         }
@@ -43,11 +43,29 @@ const AboutStock = ({ stockName }) => {
   }, [stockName]); // Re-run when stockName changes
 
   return (
-    <div className="about-section">
-      <h1>About {stockName}</h1>
-      {loading && <p>Loading information...</p>}
-      {error && <p className="error-message">{error}</p>}
-      {!loading && !error && <p>{data}</p>}
+    <div className="bg-white shadow-md rounded-lg p-6 max-w-4xl mx-auto my-8">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b pb-3">
+        About {stockName}
+      </h1>
+      
+      {loading && (
+        <div className="flex items-center justify-center py-10">
+          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500"></div>
+          <span className="ml-3 text-gray-600">Loading information...</span>
+        </div>
+      )}
+      
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-500 p-4 my-4">
+          <p className="text-red-700">{error}</p>
+        </div>
+      )}
+      
+      {!loading && !error && (
+        <div className="prose max-w-none">
+          <p className="text-gray-700 leading-relaxed whitespace-pre-line">{data}</p>
+        </div>
+      )}
     </div>
   );
 };

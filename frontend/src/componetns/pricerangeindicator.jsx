@@ -19,8 +19,8 @@ const PriceRangeIndicator = ({ stockData, currentVal }) => {
   }, [low, high, current]);
 
   return (
-    <div className="mt-8">
-      <h2 className="text-xl font-medium text-gray-700 mb-4">Performance</h2>
+    <div className="mt-8 mb-10">
+      <h2 className="text-xl font-medium text-gray-700 mb-10">Performance</h2>
       <div className="flex justify-between mb-2">
         <div className="text-sm text-gray-600">Today's Low</div>
         <div className="text-sm text-gray-600">Today's High</div>

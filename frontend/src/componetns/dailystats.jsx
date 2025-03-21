@@ -12,7 +12,7 @@ const DailyStats = ({ data }) => {
   const fiftyTwoWeek = data.fifty_two_week || {};
   
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 bg-gray-50 rounded-lg shadow-md">
+    <div className="w-full max-w-4xl mx-auto p-6 bg-gray-50 rounded-lg shadow-md mb-6">
       <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center border-b pb-2">
         {data.name || 'Stock'} ({data.symbol || ''})
       </h2>
