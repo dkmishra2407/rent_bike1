@@ -1,7 +1,4 @@
 const Holding = require('../Models/HoldingModel');
-// router.get('/getholding', holdingController.getHoldings);
-// router.post('/addholding', holdingController.addHolding);
-// router.delete('/remove', holdingController.removeHolding);
 module.exports.getHoldings = async (req, res) => {
     try {
         const { HoldingId } = req.body;

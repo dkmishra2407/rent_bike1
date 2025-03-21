@@ -5,12 +5,14 @@ const WatchlistRoutes = require('./Routes/WatchlistRoutes')
 const db = require('./dbconfig/dbconfig');
 // const cors = require('cors')
 const HoldingRoutes = require('./Routes/HoldingRoutes');
-
+const ExchangeRoutes = require('./Routes/ExchangeRoutes');
 // app.use(cors())
 app.use(express.json())
 app.use('/', UserRoutes)
 app.use('/stocks',WatchlistRoutes);
 app.use('/holding', HoldingRoutes);
+app.use('/exchange', ExchangeRoutes);
+
 app.get('/', (req, res) => {
     console.log("Hello from backend")
 })

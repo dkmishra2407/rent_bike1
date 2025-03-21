@@ -10,7 +10,7 @@ const AboutStock = ({ stockName }) => {
       try {
         setLoading(true);
         
-        const apiKey = process.env.REACT_APP_GENERATIVE_API_KEY || 'AIzaSyAob0WQKtKQJltILvk3mchuYr-XuphVJWY'
+        const apiKey = 'AIzaSyAob0WQKtKQJltILvk3mchuYr-XuphVJWY'
         console.log(apiKey)
         if (!apiKey) {
           throw new Error("API key is missing. Check your .env file.");
