@@ -102,12 +102,6 @@ module.exports.loginUser = async (req, res) => {
             msg: "User logged in successfully",
             user: user,
             token: token
-            // user: {
-            //     id: user._id,
-            //     name: user.Name,
-            //     email: user.Email,
-            //     username: user.Username
-            // }
         });
     }
     catch(err){
