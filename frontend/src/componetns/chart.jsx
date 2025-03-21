@@ -3,7 +3,7 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend } from 'r
 import axios from 'axios';
 import PriceRangeIndicator from './pricerangeindicator';
 import AboutStock from './aboutstock';
-
+import DailyStats from './dailystats';
 const Chart = () => {
   const [stockData, setStockData] = useState({});
   const [currentVal, setCurrentVal] = useState(0);
@@ -11,7 +11,7 @@ const Chart = () => {
   const [days, setDays] = useState(30);
   const API_KEY = 'f7c090d1abmsh0b1dcc790f243ccp1b8b18jsne1af8c2785f4';
   const API_HOST = 'twelve-data1.p.rapidapi.com';
-  const STOCK_SYMBOL = 'TSLA';
+  const STOCK_SYMBOL = 'GOOG';
   
   const [logo, setLogo] = useState('');
 
@@ -108,7 +108,7 @@ const Chart = () => {
   }, [days]);
 
   return (
-    <div className="chart-container">
+    <div className="chart-container w-3/5 ">
        
        <div className='flex justify-between items-center'>
        {logo && <img src={logo} alt="logo" />}
@@ -129,7 +129,7 @@ const Chart = () => {
         <p>Loading chart data...</p>
       )}
 
-      <div className="button-group">
+      <div className="button-group flex gap-2">
         <button className="btn btn-primary" onClick={() => handleButtonClick(10)}>10 Days</button>
         <button className="btn btn-primary" onClick={() => handleButtonClick(20)}>20 Days</button>
         <button className="btn btn-primary" onClick={() => handleButtonClick(30)}>30 Days</button>
@@ -139,8 +139,10 @@ const Chart = () => {
       </div>
 
       <PriceRangeIndicator stockData={stockData} currentVal={currentVal}/>
-      
-      {Object.keys(stockData).length > 0 && (
+
+      <DailyStats data={stockData} />
+
+      {/* {Object.keys(stockData).length > 0 && (
         <div className="stock-info">
           <h3>Daily Stats</h3>
           <p>Open: ${stockData.open}</p>
@@ -149,7 +151,7 @@ const Chart = () => {
           <p>Close: ${stockData.close}</p>
           <p>Volume: {stockData.volume}</p>
         </div>
-      )}
+      )} */}
 
       <AboutStock stockName={STOCK_SYMBOL}/>
     </div>

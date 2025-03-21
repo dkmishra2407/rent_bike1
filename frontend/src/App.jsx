@@ -1,15 +1,15 @@
 import React from 'react';
-import Chart from './componetns/chart';
 import  Sidebar  from './componetns/sidebar/sidebar';
-import Header from './componetns/header';
+// import Header from './componetns/header';
 import './App.css'
+import Stockinfo from './pages/stockinfo';
 function App() {
   return (
     <div className="flex flex-col">
       <Sidebar />
-      <Header/>
+      {/* <Header/> */}
       <div className="pl-22 pt-5 pr-5 pb-10">
-        <Chart />
+        <Stockinfo />
       </div>
     </div>
   );

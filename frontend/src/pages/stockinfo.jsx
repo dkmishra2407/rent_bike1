@@ -1,9 +1,13 @@
 import React from 'react'
-
-const stockinfo = () => {
+import Chart from '../componetns/chart';
+import Modal from '../componetns/Modal';
+const Stockinfo = () => {
   return (
-    <div>stockinfo</div>
+    <div className='flex gap-10'>
+      <Chart />
+      <Modal/>
+    </div>
   )
 }
 
-export default stockinfo
+export default Stockinfo
