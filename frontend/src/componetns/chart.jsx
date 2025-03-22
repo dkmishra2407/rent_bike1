@@ -11,7 +11,7 @@ const Chart = () => {
   const [days, setDays] = useState(30);
   const API_KEY = 'f7c090d1abmsh0b1dcc790f243ccp1b8b18jsne1af8c2785f4';
   const API_HOST = 'twelve-data1.p.rapidapi.com';
-  const STOCK_SYMBOL = 'GOOG';
+  const STOCK_SYMBOL = 'AAPL';
   
   const [logo, setLogo] = useState('');
 
