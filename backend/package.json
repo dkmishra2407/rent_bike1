@@ -5,12 +5,13 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server.js"
+    "start": "node server.js"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.12.1",

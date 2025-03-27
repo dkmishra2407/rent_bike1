@@ -108,7 +108,7 @@ module.exports.addHolding = async (req, res) => {
 
 module.exports.removeHolding = async (req, res) => {
     try {
-        const { id,Symbol } = req.body;
+        const { HoldingId,Symbol } = req.body;
         
         if (!Symbol) {
             return res.status(400).json({
@@ -117,7 +117,7 @@ module.exports.removeHolding = async (req, res) => {
             });
         }
         
-        const userHolding = await Holding.findOne({ HoldingId: id });
+        const userHolding = await Holding.findOne({ HoldingId});
         
         if (!userHolding) {
             return res.status(404).json({
