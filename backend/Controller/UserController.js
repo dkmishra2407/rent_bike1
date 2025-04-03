@@ -58,12 +58,7 @@ module.exports.registerUser = async (req, res) => {
     
     return res.status(200).json({ 
       msg: "User registered successfully",
-      user: {
-        id: newUser._id,
-        name: newUser.Name,
-        email: newUser.Email,
-        username: newUser.Username
-      }
+      user: newUser
     });
     
   } catch (err) {
