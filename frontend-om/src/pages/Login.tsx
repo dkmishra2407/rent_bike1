@@ -6,20 +6,41 @@ import { Lock } from 'lucide-react';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const { setUser } = useAuthStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement actual login logic
-    // For now, just simulate a successful login
-    setUser({
-      id: '1',
-      email,
-      name: 'Test User',
-      token: 'dummy-token',
-    });
-    navigate('/dashboard');
+    setError('');
+
+    try {
+      const response = await fetch('https://localhost:3000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
+      }
+
+      // Store user data in Auth Store
+      setUser({
+        id: data.user.id,
+        email: data.user.email,
+        name: data.user.name,
+        token: data.token,
+      });
+
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    }
   };
 
   return (
@@ -29,6 +50,11 @@ const Login = () => {
           <Lock className="h-8 w-8 text-blue-600" />
         </div>
         <h2 className="text-2xl font-bold text-center mb-6">Login to Your Account</h2>
+
+        {error && (
+          <p className="text-red-500 text-center mb-4">{error}</p>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Email</label>
