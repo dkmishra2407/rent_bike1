@@ -401,6 +401,8 @@ def api_market_status():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
+
 @app.route('/api/place-order', methods=['POST'])
 def place_order():
     """Place a new order - queue it if market closed, monitor it if market open"""
@@ -467,6 +469,15 @@ def get_orders():
         "queued_orders": queued_orders,
         "market_open": market_open
     })
+
+@app.route('/api/indices', methods=['GET'])
+def api_indices():
+    try:
+        all_indices = nse.all_indices()
+        # print(all_indices['data'])
+        return jsonify(all_indices)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route('/api/cancel-order/<order_id>', methods=['DELETE'])
 def cancel_order(order_id):
