@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 
@@ -7,7 +7,17 @@ interface PrivateRouteProps {
 }
 
 const PrivateRoute: React.FC<PrivateRouteProps> = ({ children }) => {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user, setAuth } = useAuthStore();
+
+  useEffect(() => {
+    // Rehydrate Zustand store from localStorage
+    const storedUser = localStorage.getItem("user");
+    const storedToken = localStorage.getItem("token");
+
+    if (storedUser && storedToken && !user) {
+      setAuth(JSON.parse(storedUser), storedToken);
+    }
+  }, [user, setAuth]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" />;

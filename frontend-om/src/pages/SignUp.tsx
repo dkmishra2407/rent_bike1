@@ -1,27 +1,59 @@
-"use client"
-
 import { useState } from "react"
-import Link from "next/link"
-import { Eye, EyeOff, User, Mail, Lock, Github, Twitter, Facebook, Check, X } from "lucide-react"
-import { motion } from "framer-motion"
 
-export default function SignupPage() {
+import Link from "next/link"
+import { Eye, EyeOff, User, Mail, Lock, Github, Twitter, Facebook, Check, X, PhoneCallIcon } from "lucide-react"
+import { motion } from "framer-motion"
+import { useAuthStore } from "../store/authStore"
+import { useNavigate } from "react-router-dom"
+
+
+
+export default function SignUp() {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" })
+  const [formData, setFormData] = useState({ Name: "", Email: "", Password: "",MobileNo:"" })
   const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!agreedToTerms) return
+const setAuth = useAuthStore((state) => state.setAuth)
 
-    setIsLoading(true)
-    setTimeout(() => setIsLoading(false), 1500)
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault()
+  if (!agreedToTerms) return
+
+  setIsLoading(true)
+
+  try {
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData),
+    })
+
+    const data = await res.json()
+
+    if (!res.ok) {
+      throw new Error(data.message || "Registration failed")
+    }
+
+    const { user, token } = data
+
+    // Save to Zustand and localStorage
+    setAuth(user, token)
+
+    // Redirect to dashboard or homepage
+    navigate("/dashboard") // Change this path as needed
+  } catch (err: any) {
+    console.error("Signup error:", err.message)
+    alert(err.message)
+  } finally {
+    setIsLoading(false)
   }
+}
 
   const calculatePasswordStrength = (password: string): number => {
     if (!password) return 0
@@ -33,7 +65,7 @@ export default function SignupPage() {
     return strength
   }
 
-  const passwordStrength = calculatePasswordStrength(formData.password)
+  const passwordStrength = calculatePasswordStrength(formData.Password)
   const getPasswordStrengthText = () => {
     if (passwordStrength === 0) return ""
     if (passwordStrength <= 25) return "Weak"
@@ -73,9 +105,9 @@ export default function SignupPage() {
                   <User className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <input
-                  id="name"
-                  name="name"
-                  value={formData.name}
+                  id="Name"
+                  name="Name"
+                  value={formData.Name}
                   onChange={handleChange}
                   placeholder="John Doe"
                   className="pl-10 w-full border border-gray-300 rounded px-3 py-2"
@@ -85,7 +117,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
+              <label htmlFor="Email" className="text-sm font-medium">
                 Email Address
               </label>
               <div className="relative">
@@ -93,10 +125,10 @@ export default function SignupPage() {
                   <Mail className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
+                  id="Email"
+                  name="Email"
+                  type="Email"
+                  value={formData.Email}
                   onChange={handleChange}
                   placeholder="name@example.com"
                   className="pl-10 w-full border border-gray-300 rounded px-3 py-2"
@@ -106,7 +138,29 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
+              <label htmlFor="phone" className="text-sm font-medium">
+                Mobile No
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <PhoneCallIcon className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <input
+                  id="MobileNo"
+                  name="MobileNo"
+                  type="PhoneNo"
+                  pattern="[0-9]{10}"
+                  value={formData.MobileNo}
+                  onChange={handleChange}
+                  placeholder="9857420355"
+                  className="pl-10 w-full border border-gray-300 rounded px-3 py-2"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="Password" className="text-sm font-medium">
                 Password
               </label>
               <div className="relative">
@@ -114,10 +168,10 @@ export default function SignupPage() {
                   <Lock className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
+                  id="Password"
+                  name="Password"
+                  type={showPassword ? "text" : "Password"}
+                  value={formData.Password}
                   onChange={handleChange}
                   placeholder="••••••••"
                   className="pl-10 w-full border border-gray-300 rounded px-3 py-2"
@@ -136,7 +190,7 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              {formData.password && (
+              {formData.Password && (
                 <div className="mt-2 space-y-2">
                   <div className="flex justify-between text-xs">
                     <span>Password Strength: {getPasswordStrengthText()}</span>
@@ -147,10 +201,10 @@ export default function SignupPage() {
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-xs mt-2">
-                    <StrengthCheck condition={/[A-Z]/.test(formData.password)} text="Uppercase letter" />
-                    <StrengthCheck condition={/[0-9]/.test(formData.password)} text="Number" />
-                    <StrengthCheck condition={/[^A-Za-z0-9]/.test(formData.password)} text="Special character" />
-                    <StrengthCheck condition={formData.password.length >= 8} text="8+ characters" />
+                    <StrengthCheck condition={/[A-Z]/.test(formData.Password)} text="Uppercase letter" />
+                    <StrengthCheck condition={/[0-9]/.test(formData.Password)} text="Number" />
+                    <StrengthCheck condition={/[^A-Za-z0-9]/.test(formData.Password)} text="Special character" />
+                    <StrengthCheck condition={formData.Password.length >= 8} text="8+ characters" />
                   </div>
                 </div>
               )}
@@ -218,7 +272,7 @@ export default function SignupPage() {
       </motion.div>
     </div>
   )
-}
+};
 
 const StrengthCheck = ({ condition, text }: { condition: boolean; text: string }) => (
   <div className="flex items-center gap-1">

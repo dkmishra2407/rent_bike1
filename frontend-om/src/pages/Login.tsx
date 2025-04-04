@@ -1,25 +1,59 @@
-"use client"
-
 import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import { Eye, EyeOff, Mail, Lock, Github, Twitter, Facebook } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuthStore } from "../store/authStore"
+import { useNavigate } from "react-router-dom"
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [tab, setTab] = useState<"email" | "social">("email")
+  const navigate = useNavigate();
+  const [Email, setEmail] = useState("");
+  const [Password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [tab, setTab] = useState<"email" | "social">("email");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-    }, 1500)
-  }
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ Email, Password })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Something went wrong!");
+      }
+
+      const { token, user } = data;
+
+      // Save to localStorage manually
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("token", token);
+
+      // Update Zustand state
+      setAuth(user, token);
+
+      // Redirect or show success
+      navigate("/dashboard");
+    } catch (error: any) {
+      console.error("Login failed:", error.message);
+      alert(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-12">
@@ -68,7 +102,7 @@ export default function LoginPage() {
                     <input
                       id="email"
                       type="email"
-                      value={email}
+                      value={Email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@example.com"
                       className="w-full pl-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -93,7 +127,7 @@ export default function LoginPage() {
                     <input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      value={password}
+                      value={Password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••"
                       className="w-full pl-10 pr-10 px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"

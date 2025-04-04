@@ -8,7 +8,14 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Clear Zustand state
     setUser(null);
+  
+    // Clear localStorage
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+  
+    // Redirect to login
     navigate('/login');
   };
 
@@ -24,7 +31,9 @@ const Navbar = () => {
           </div>
           
           <div className="flex items-center space-x-6">
+            <Link to="/learn" className="text-gray-600 hover:text-gray-900">Learn</Link>
             <Link to="/stocks" className="text-gray-600 hover:text-gray-900">Stocks</Link>
+            <Link to="/watchlist" className="text-gray-600 hover:text-gray-900">Watchlist</Link>
             <Link to="/about" className="text-gray-600 hover:text-gray-900">About</Link>
             <Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link>
             
