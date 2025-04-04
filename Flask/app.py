@@ -734,6 +734,6 @@ if __name__ == '__main__':
     market_thread = threading.Thread(target=market_monitor_thread)
     market_thread.daemon = True
     market_thread.start()
-    
-    # Run the Flask app
-    app.run(debug=True)
+    port = int(os.getenv("PORT", 5000))
+    # Run the Flask app on port 5000
+    app.run(debug=True, port=port,host="0.0.0.0")
