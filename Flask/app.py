@@ -259,17 +259,22 @@ import pandas as pd
 import threading
 import time
 import json
+import os
 import datetime
 import uuid
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from dotenv import load_dotenv
 app = Flask(__name__)
 CORS(app)
 nse = NSELive()
-
+load_dotenv()
 # Connect to MongoDB
-client = MongoClient('mongodb://localhost:27017/GrowwUp')
+mongo_uri = os.getenv("MONGO_URI")
+
+# Initialize MongoDB client
+client = MongoClient(mongo_uri)
 db = client['GrowwUp']
 orders_collection = db['orders']
 executions_collection = db['executions']
