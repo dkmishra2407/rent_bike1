@@ -1,7 +1,7 @@
 const Holding = require('../Models/HoldingModel');
 module.exports.getHoldings = async (req, res) => {
     try {
-        const { HoldingId } = req.body;
+        const { HoldingId } = req.params;
         
         if (!HoldingId) {
             return res.status(400).json({

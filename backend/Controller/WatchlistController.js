@@ -2,7 +2,7 @@ const Watchlist = require('../Models/WatchlistModel');
 
 module.exports.getWatchlist = async (req, res) => {
     try {
-        const { WatchlistId } = req.body;
+        const { WatchlistId } = req.params;
         const watchlist = await Watchlist.findOne({ WatchlistId });
 
         if (!watchlist) {
