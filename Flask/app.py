@@ -682,6 +682,16 @@ def get_executions():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/graph-data/<symbol>', methods=['GET'])
+def app_data(symbol):
+    tick_data = nse.tick_data(symbol)
+    
+    # Convert only the first 10 rows to a dictionary for graphing
+    graph_data = tick_data['grapthData'][0:100]
+    
+    return jsonify(graph_data)
+
+
 #FETCHING THE STOCKS DATA 
 @app.route('/api/market-status', methods=['GET'])
 def api_market_status():
