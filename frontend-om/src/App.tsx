@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
@@ -9,10 +9,22 @@ import SignUp from './pages/SignUp';
 import StockList from './pages/StockList';
 import StockDetail from './pages/StockDetail';
 import Dashboard from './pages/Dashboard';
-import PrivateRoute from './components/PrivateRoute';
 import Footer from './components/Footer';
+import Watchlist from './pages/Watchlist';
+import { useAuthStore } from './store/authStore';
+import PrivateRoute from './components/PrivateRoute';
+import LearnPage from './pages/Learn';
+import StockDashboard from './pages/Holding';
 
 function App() {
+  const setUser = useAuthStore((state) => state.setUser);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
@@ -24,17 +36,24 @@ function App() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
+            <Route path="/learn" element={<LearnPage />} />
+
             <Route path="/stocks" element={<StockList />} />
+            <Route path="/holding" element={<StockDashboard/>} />
             <Route path="/stocks/:symbol" element={<StockDetail />} />
             <Route
               path="/dashboard"
               element={
-                // <PrivateRoute>
+                <PrivateRoute>
                   <Dashboard />
-                // </PrivateRoute>
+
+                </PrivateRoute>
               }
 
             />
+            <Route path="/stocks" element={<PrivateRoute><StockList /></PrivateRoute> } />
+            <Route path="/watchlist" element={<PrivateRoute><Watchlist /></PrivateRoute> } />
+             
           </Routes>
 
         </main>
