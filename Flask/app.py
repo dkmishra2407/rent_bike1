@@ -253,26 +253,28 @@
 #      WE HAVE TO STORE ALL THE REQUESTS THAT ARE COME WHEN MARKET IS CLSOED IN THE QUEUE ONCE MARKET IS OPENED WE HAVE TO SEND ALL THE REQUESTS TO THE API AND CONTINOUSLY CHECK THAT MARKET IS COME AT REQUEST AT THAT PRICE THEN BUY/SELL STOCK
 
 #     WRITE ONLY ROUTES FOR THE APIS DO NOT WRITE UI 
-
-
 from flask import Flask, jsonify, request
 from jugaad_data.nse import NSELive
 import pandas as pd
 import threading
 import time
 import json
-import queue
 import datetime
 import uuid
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 
 app = Flask(__name__)
 nse = NSELive()
 
-# Queue for orders when market is closed
-pending_orders = queue.Queue()
-
-# Track active orders that are waiting for price targets when market is open
-active_orders = {}
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/GrowwUp')
+db = client['GrowwUp']
+orders_collection = db['orders']
+executions_collection = db['executions']
+users = db['users']
+exchanges = db['exchanges']
+holdings = db['Holdings']
 
 # Track market status
 market_open = False
@@ -280,6 +282,11 @@ should_continue = True
 
 # Lock for thread-safe operations
 lock = threading.Lock()
+
+# Create indexes for faster queries
+orders_collection.create_index([('status', 1)])
+orders_collection.create_index([('symbol', 1)])
+orders_collection.create_index([('created_at', -1)])
 
 def check_market_status():
     """Check if the market is currently open"""
@@ -297,68 +304,91 @@ def check_market_status():
         return False
 
 def process_pending_orders():
-    """Process all pending orders from the queue when market opens"""
-    global pending_orders
-    
-    print(f"Processing {pending_orders.qsize()} pending orders")
-    
-    while not pending_orders.empty():
-        order = pending_orders.get()
-        order_id = str(uuid.uuid4())
+    """Process all pending orders from the database when market opens"""
+    try:
+        # Find all queued orders
+        queued_orders = orders_collection.find({'status': 'QUEUED'})
         
-        # Add to active orders for price monitoring
-        with lock:
-            active_orders[order_id] = order
-            order['order_id'] = order_id
-            order['status'] = 'ACTIVE'
-            order['created_at'] = datetime.datetime.now().isoformat()
+        count = 0
+        for order in queued_orders:
+            # Update order status to ACTIVE
+            orders_collection.update_one(
+                {'_id': order['_id']},
+                {'$set': {
+                    'status': 'ACTIVE',
+                    'updated_at': datetime.datetime.now()
+                }}
+            )
+            count += 1
         
-        print(f"Moved order to active monitoring: {order}")
+        print(f"Processed {count} pending orders")
+    except Exception as e:
+        print(f"Error processing pending orders: {e}")
 
 def monitor_order_prices():
     """Monitor prices for active orders and execute when target price is reached"""
-    global active_orders
-    
-    orders_to_execute = []
-    
-    with lock:
-        if not active_orders:
+    try:
+        # Get all active orders
+        active_orders = orders_collection.find({'status': 'ACTIVE'})
+        active_orders_list = list(active_orders)
+        
+        if not active_orders_list:
             return
             
         # Group by symbol to minimize API calls
-        symbols = set(order['symbol'] for order in active_orders.values())
+        symbols = {}
+        for order in active_orders_list:
+            symbol = order['symbol']
+            if symbol not in symbols:
+                symbols[symbol] = []
+            symbols[symbol].append(order)
         
-        for symbol in symbols:
+        orders_to_execute = []
+        
+        for symbol, orders in symbols.items():
             try:
                 quote = nse.stock_quote(symbol)
                 current_price = quote['priceInfo']['lastPrice']
                 
                 # Check each order for this symbol
-                for order_id, order in list(active_orders.items()):
-                    if order['symbol'] != symbol:
-                        continue
-                        
+                for order in orders:
                     if (order['order_type'] == 'BUY' and current_price <= order['target_price']) or \
                        (order['order_type'] == 'SELL' and current_price >= order['target_price']):
                         # Order condition met
-                        order['execution_price'] = current_price
-                        order['executed_at'] = datetime.datetime.now().isoformat()
-                        order['status'] = 'EXECUTED'
+                        execution = {
+                            'order_id': str(order['_id']),
+                            'symbol': order['symbol'],
+                            'quantity': order['quantity'],
+                            'order_type': order['order_type'],
+                            'target_price': order['target_price'],
+                            'execution_price': current_price,
+                            'executed_at': datetime.datetime.now()
+                        }
                         
-                        # Add to execution list
-                        orders_to_execute.append(order.copy())
+                        # Add to executions
+                        executions_collection.insert_one(execution)
                         
-                        # Remove from active monitoring
-                        del active_orders[order_id]
+                        # Update order status to EXECUTED
+                        orders_collection.update_one(
+                            {'_id': order['_id']},
+                            {'$set': {
+                                'status': 'EXECUTED',
+                                'execution_price': current_price,
+                                'executed_at': datetime.datetime.now(),
+                                'updated_at': datetime.datetime.now()
+                            }}
+                        )
+                        
+                        orders_to_execute.append(order)
                         
             except Exception as e:
                 print(f"Error monitoring price for {symbol}: {e}")
     
-    # Execute orders (in real implementation, this would call your broker's API)
-    for order in orders_to_execute:
-        print(f"Executing order: {order}")
-        # Here you would integrate with your broker's API
-        # broker_api.place_order(order)
+        # Return number of executed orders
+        return len(orders_to_execute)
+    except Exception as e:
+        print(f"Error in monitor_order_prices: {e}")
+        return 0
 
 def market_monitor_thread():
     """Background thread to monitor market status and process orders"""
@@ -380,14 +410,278 @@ def market_monitor_thread():
         
         # If market is open, monitor prices for active orders
         if market_open:
-            monitor_order_prices()
+            executed_count = monitor_order_prices()
+            if executed_count:
+                print(f"Executed {executed_count} orders")
         
         # Check every 60 seconds for market status
         # and every 5 seconds for prices when market is open
         time.sleep(5 if market_open else 60)
+def serialize_doc(doc):
+    for key, value in doc.items():
+        if isinstance(value, ObjectId):
+            doc[key] = str(value)
+    return doc
 
 # API Routes
 
+@app.route('/api/place-order', methods=['POST'])
+def place_order():
+    try:
+        data = request.json
+        required_fields = ['symbol', 'quantity', 'order_type', 'target_price', 'Email', 'OrderId', 'HoldingId']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({"error": f"Missing required field: {field}"}), 400
+
+        # Validate numeric inputs
+        try:
+            quantity = int(data['quantity'])
+            target_price = float(data['target_price'])
+            
+            if quantity <= 0 or target_price <= 0:
+                return jsonify({"error": "Quantity and price must be positive values"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid numeric values for quantity or price"}), 400
+            
+        # Normalize order type
+        order_type = data['order_type'].upper()
+        if order_type not in ['BUY', 'SELL']:
+            return jsonify({"error": "Order type must be either BUY or SELL"}), 400
+            
+        # Fetch user data
+        user = users.find_one({'Email': data['Email']})
+
+        print(user)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        # Validate holdings for SELL orders
+        symbol = data['symbol'].upper()
+        if order_type == 'SELL':
+            holding = holdings.find_one({'HoldingId': data['HoldingId']})
+            if not holding:
+                return jsonify({"error": "Holding not found"}), 404
+                
+            existing_holding = next((h for h in holding['Holdings'] if h['symbol'] == symbol), None)
+            if not existing_holding or existing_holding['quantity'] < quantity:
+                return jsonify({"error": "Insufficient holdings to sell"}), 400
+        
+        balance = user['Balance']
+        # balance = 10000
+        if order_type == 'BUY' and (float(balance) < (quantity * target_price)):
+            return jsonify({"error": "Insufficient balance"}), 400
+        
+        # Create order object
+        order = {
+            'OrderId': data['OrderId'],
+            'symbol': symbol,
+            'quantity': quantity,
+            'order_type': order_type,
+            'target_price': target_price,
+            'created_at': datetime.datetime.now(),
+            'updated_at': datetime.datetime.now(),
+            'status': 'ACTIVE' if market_open else 'QUEUED'  # Assuming market_open is defined elsewhere
+        }
+        
+        # Insert order
+        result = orders_collection.insert_one(order)
+        order_id = str(result.inserted_id)
+        order['OrderId'] = order_id  # replace the ObjectId with its string
+
+        
+        # Process active orders (skip this for queued orders)
+        if order['status'] == 'ACTIVE':
+            # Handle BUY order
+            if order_type == 'BUY':
+                # Update user balance
+                new_balance = user['Balance'] - (quantity * target_price)
+                users.update_one({'_id': user['_id']}, {'$set': {'Balance': new_balance}})
+                
+                # Update holdings
+                holding = holdings.find_one({'HoldingId': data['HoldingId']})
+                if not holding:
+                    holding = {'HoldingId': data['HoldingId'], 'Holdings': []}
+                    holdings.insert_one(holding)
+                    holding = holdings.find_one({'HoldingId': data['HoldingId']})
+                
+                # Update existing holding or add new one
+                existing_holding = next((h for h in holding['Holdings'] if h['symbol'] == symbol), None)
+                if existing_holding:
+                    total_qty = existing_holding['quantity'] + quantity
+                    avg_price = ((existing_holding['quantity'] * existing_holding['price']) + 
+                                 (quantity * target_price)) / total_qty
+                    
+                    # Update the holding in the list
+                    for h in holding['Holdings']:
+                        if h['symbol'] == symbol:
+                            h['quantity'] = total_qty
+                            h['price'] = avg_price
+                            break
+                else:
+                    holding['Holdings'].append({
+                        'symbol': symbol, 
+                        'quantity': quantity, 
+                        'price': target_price
+                    })
+                
+                # Save updated holdings
+                holdings.update_one({'HoldingId': data['HoldingId']}, {'$set': {'Holdings': holding['Holdings']}})
+            
+            # Handle SELL order
+            else:
+                # Update user balance
+                new_balance = user['Balance'] + (quantity * target_price)
+                users.update_one({'_id': user['_id']}, {'$set': {'Balance': new_balance}})
+                
+                # Update holdings
+                holding = holdings.find_one({'HoldingId': data['HoldingId']})
+                if not holding:
+                    return jsonify({"error": "Holding not found"}), 404
+                
+                # Find and update the specific holding
+                for i, h in enumerate(holding['Holdings']):
+                    if h['symbol'] == symbol:
+                        h['quantity'] -= quantity
+                        if h['quantity'] == 0:
+                            # Remove this holding if quantity becomes zero
+                            holding['Holdings'].pop(i)
+                        break
+                
+                # Save updated holdings or delete if empty
+                if not holding['Holdings']:
+                    holdings.delete_one({'HoldingId': data['HoldingId']})
+                else:
+                    holdings.update_one({'HoldingId': data['HoldingId']}, {'$set': {'Holdings': holding['Holdings']}})
+        
+        # Return success response
+        return jsonify({
+            "message": "Order placed successfully",
+            "order_id": order_id,
+            "order": serialize_doc(order)
+        })
+  
+
+
+    
+    except Exception as e:
+        # Log the full error for debugging
+        app.logger.error(f"Order placement error: {str(e)}", exc_info=True)
+        return jsonify({"error": "An error occurred while processing your order"}), 500
+    
+
+@app.route('/api/orders', methods=['GET'])
+def get_orders():
+    """Get all orders with optional filtering"""
+    try:
+        # Parse query parameters
+        status = request.args.get('status')
+        symbol = request.args.get('symbol')
+        
+        # Build query
+        query = {}
+        if status:
+            query['status'] = status.upper()
+        if symbol:
+            query['symbol'] = symbol.upper()
+        
+        # Get orders
+        orders_cursor = orders_collection.find(query).sort('created_at', -1)
+        orders = []
+        
+        for order in orders_cursor:
+            # Convert ObjectId to string for JSON serialization
+            order['_id'] = str(order['_id'])
+            orders.append(order)
+        
+        return jsonify({
+            "orders": orders,
+            "count": len(orders),
+            "market_open": market_open
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/orders/<order_id>', methods=['GET'])
+def get_order(order_id):
+    """Get a specific order by ID"""
+    try:
+        # Validate ObjectId
+        if not ObjectId.is_valid(order_id):
+            return jsonify({"error": "Invalid order ID"}), 400
+            
+        order = orders_collection.find_one({'_id': ObjectId(order_id)})
+        
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+            
+        # Convert ObjectId to string for JSON serialization
+        order['_id'] = str(order['_id'])
+        
+        return jsonify(order)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/orders/<order_id>', methods=['DELETE'])
+def cancel_order(order_id):
+    """Cancel an order"""
+    try:
+        # Validate ObjectId
+        if not ObjectId.is_valid(order_id):
+            return jsonify({"error": "Invalid order ID"}), 400
+            
+        # Find the order
+        order = orders_collection.find_one({'_id': ObjectId(order_id)})
+        
+        if not order:
+            return jsonify({"error": "Order not found"}), 404
+            
+        # Check if order can be cancelled
+        if order['status'] in ['EXECUTED', 'CANCELLED']:
+            return jsonify({
+                "error": f"Cannot cancel order in {order['status']} status"
+            }), 400
+            
+        # Update order status
+        orders_collection.update_one(
+            {'_id': ObjectId(order_id)},
+            {'$set': {
+                'status': 'CANCELLED',
+                'updated_at': datetime.datetime.now()
+            }}
+        )
+        
+        # Get updated order
+        updated_order = orders_collection.find_one({'_id': ObjectId(order_id)})
+        updated_order['_id'] = str(updated_order['_id'])
+        
+        return jsonify({
+            "message": "Order cancelled successfully",
+            "order": updated_order
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/executions', methods=['GET'])
+def get_executions():
+    """Get all executed orders"""
+    try:
+        executions_cursor = executions_collection.find().sort('executed_at', -1)
+        executions = []
+        
+        for execution in executions_cursor:
+            # Convert ObjectId to string for JSON serialization
+            execution['_id'] = str(execution['_id'])
+            executions.append(execution)
+        
+        return jsonify({
+            "executions": executions,
+            "count": len(executions)
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+#FETCHING THE STOCKS DATA 
 @app.route('/api/market-status', methods=['GET'])
 def api_market_status():
     """Get current market status"""
@@ -400,98 +694,7 @@ def api_market_status():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-
-@app.route('/api/place-order', methods=['POST'])
-def place_order():
-    """Place a new order - queue it if market closed, monitor it if market open"""
-    try:
-        data = request.json
-        
-        # Validate request
-        required_fields = ['symbol', 'quantity', 'order_type', 'target_price']
-        for field in required_fields:
-            if field not in data:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
-        
-        # Create order object
-        order = {
-            'symbol': data['symbol'].upper(),
-            'quantity': int(data['quantity']),
-            'order_type': data['order_type'].upper(),  # BUY or SELL
-            'target_price': float(data['target_price']),
-            'created_at': datetime.datetime.now().isoformat()
-        }
-        
-        # Add optional fields
-        if 'limit_price' in data:
-            order['limit_price'] = float(data['limit_price'])
-        
-        # Check if market is open
-        if market_open:
-            # Add to active orders with a unique ID
-            order_id = str(uuid.uuid4())
-            order['order_id'] = order_id
-            order['status'] = 'ACTIVE'
-            
-            with lock:
-                active_orders[order_id] = order
-            
-            return jsonify({
-                "message": "Order placed for active monitoring",
-                "order_id": order_id,
-                "order": order
-            })
-        else:
-            # Add to queue for when market opens
-            order['status'] = 'QUEUED'
-            pending_orders.put(order)
-            
-            return jsonify({
-                "message": "Market is closed. Order queued for processing when market opens.",
-                "order": order
-            })
-            
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/orders', methods=['GET'])
-def get_orders():
-    """Get all active and queued orders"""
-    queued_orders = list(pending_orders.queue)
     
-    with lock:
-        all_active_orders = list(active_orders.values())
-    
-    return jsonify({
-        "active_orders": all_active_orders,
-        "queued_orders": queued_orders,
-        "market_open": market_open
-    })
-
-@app.route('/api/indices', methods=['GET'])
-def api_indices():
-    try:
-        all_indices = nse.all_indices()
-        # print(all_indices['data'])
-        return jsonify(all_indices)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/cancel-order/<order_id>', methods=['DELETE'])
-def cancel_order(order_id):
-    """Cancel an active order"""
-    with lock:
-        if order_id in active_orders:
-            order = active_orders.pop(order_id)
-            return jsonify({
-                "message": "Order cancelled successfully",
-                "order": order
-            })
-        
-    return jsonify({"error": "Order not found"}), 404
-
 @app.route('/api/stock-quote/<symbol>', methods=['GET'])
 def api_stock_quote(symbol):
     """Get current stock quote"""
@@ -501,6 +704,15 @@ def api_stock_quote(symbol):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/indices', methods=['GET'])
+def api_indices():
+    """Get current indices data"""
+    try:
+        indices = nse.all_indices()
+        return jsonify(indices)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 if __name__ == '__main__':
     # Start the background thread for market monitoring
     market_thread = threading.Thread(target=market_monitor_thread)
