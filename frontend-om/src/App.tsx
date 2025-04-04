@@ -14,6 +14,7 @@ import Watchlist from './pages/Watchlist';
 import { useAuthStore } from './store/authStore';
 import PrivateRoute from './components/PrivateRoute';
 import LearnPage from './pages/Learn';
+import StockDashboard from './pages/Holding';
 
 function App() {
   const setUser = useAuthStore((state) => state.setUser);
@@ -37,6 +38,8 @@ function App() {
             <Route path="/signup" element={<SignUp />} />
             <Route path="/learn" element={<LearnPage />} />
 
+            <Route path="/stocks" element={<StockList />} />
+            <Route path="/holding" element={<StockDashboard/>} />
             <Route path="/stocks/:symbol" element={<StockDetail />} />
             <Route
               path="/dashboard"

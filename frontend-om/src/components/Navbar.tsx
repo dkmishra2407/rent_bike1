@@ -36,6 +36,8 @@ const Navbar = () => {
             <Link to="/watchlist" className="text-gray-600 hover:text-gray-900">Watchlist</Link>
             <Link to="/about" className="text-gray-600 hover:text-gray-900">About</Link>
             <Link to="/contact" className="text-gray-600 hover:text-gray-900">Contact</Link>
+            <Link to="/holding" className="text-gray-600 hover:text-gray-900">Holding</Link>
+
             
             {isAuthenticated ? (
               <>
