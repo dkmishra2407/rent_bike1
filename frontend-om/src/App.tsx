@@ -10,13 +10,14 @@ import StockList from './pages/StockList';
 import StockDetail from './pages/StockDetail';
 import Dashboard from './pages/Dashboard';
 import PrivateRoute from './components/PrivateRoute';
+import Footer from './components/Footer';
 
 function App() {
   return (
     <Router>
       <div className="min-h-screen bg-gray-50">
         <Navbar />
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-4">
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
@@ -28,13 +29,16 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <PrivateRoute>
+                // <PrivateRoute>
                   <Dashboard />
-                </PrivateRoute>
+                // </PrivateRoute>
               }
+
             />
           </Routes>
+
         </main>
+        <Footer/>
       </div>
     </Router>
   );

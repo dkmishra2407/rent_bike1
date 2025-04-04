@@ -264,8 +264,10 @@ import json
 import queue
 import datetime
 import uuid
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 nse = NSELive()
 
 # Queue for orders when market is closed
