@@ -1,5 +1,5 @@
-flask==2.2.5
-werkzeug==2.2.3
+flask==1.1.4
+werkzeug==1.0.1
 jugaad-data
 pandas
 flask-cors
