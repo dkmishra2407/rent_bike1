@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Users, Target, Globe, Github, Linkedin, Twitter, Award, Briefcase, Code, Coffee, Database, Server, Cloud, Brain, Link2 } from 'lucide-react';
-
+import devansh from "../../assets/devansh.jpg"
+import hitesh from "../../assets/hitesh.jpg"
 function App() {
   const [activeTab, setActiveTab] = useState('team');
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
@@ -21,22 +22,22 @@ function App() {
 
   const team = [
     {
-      name: "Sarah Chen",
+      name: "Devansh Mishra",
       role: "Founder & CEO",
-      image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=400",
+      image: devansh,
       bio: "Former VP at Goldman Sachs with 15+ years in fintech. Led multiple successful startups and pioneered AI-driven trading algorithms.",
-      expertise: ["Strategic Leadership", "Financial Markets", "AI/ML"],
+      expertise: [  "AI/ML","High-Frequency Trading", "Cloud Infrastructure"],
       achievements: ["Forbes 30 Under 30", "Women in Fintech Award"],
       social: {
-        linkedin: "#",
+        linkedin: "https://www.linkedin.com/in/devansh-mishra-903357295/",
         twitter: "#",
-        github: "#"
+        github: "https://github.com/dkmishra2407"
       }
     },
     {
-      name: "Michael Rodriguez",
+      name: "Hitesh Pawar",
       role: "CTO & Co-founder",
-      image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=400",
+      image: hitesh,
       bio: "Ex-Google engineer specialized in algorithmic trading systems. Built scalable systems processing millions of transactions per second.",
       expertise: ["System Architecture", "High-Frequency Trading", "Cloud Infrastructure"],
       achievements: ["Patent Holder", "Tech Innovation Award"],

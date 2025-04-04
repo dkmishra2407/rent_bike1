@@ -1,44 +1,60 @@
+import axios from 'axios';
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useParams } from 'react-router-dom';
 
-const StockDetails = ({ symbol = 'IRFC' }) => {
+const StockDetails = () => {
+  const { symbol: paramSymbol } = useParams(); // Destructure symbol from params
+  const [symbol, setSymbol] = useState('');
   const [stockData, setStockData] = useState(null);
   const [graphData, setGraphData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeframe, setTimeframe] = useState('1d'); // '1d', '30d', '365d'
 
+  // Update symbol state from route params
   useEffect(() => {
+    if (paramSymbol) {
+      setSymbol(paramSymbol);
+    }
+  }, [paramSymbol]);
+
+  // Fetch data when symbol is set
+  useEffect(() => {
+    if (!symbol) return;
+
     const fetchData = async () => {
       try {
         setLoading(true);
-        
-        // Fetch stock details
+
+        // Fetch stock quote
         const quoteResponse = await fetch(`http://127.0.0.1:5000/api/stock-quote/${symbol}`);
         if (!quoteResponse.ok) {
           throw new Error(`Failed to fetch stock data: ${quoteResponse.statusText}`);
         }
         const quoteData = await quoteResponse.json();
-        
+
         // Fetch graph data
         const graphResponse = await fetch(`http://127.0.0.1:5000/api/graph-data/${symbol}`);
         if (!graphResponse.ok) {
           throw new Error(`Failed to fetch graph data: ${graphResponse.statusText}`);
         }
         const graphData = await graphResponse.json();
-        
+
         setStockData(quoteData);
         setGraphData(graphData || []);
-        setLoading(false);
+        setError(null);
       } catch (err) {
         console.error('Error fetching data:', err);
         setError(err.message);
+      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
   }, [symbol]);
+
 
   console.log(graphData)
   const formatGraphData = (data) => {
@@ -65,6 +81,24 @@ const StockDetails = ({ symbol = 'IRFC' }) => {
       return formattedData; // All data (would normally filter for 365 days)
     }
   };
+  
+  const watchlist = JSON.parse(localStorage.getItem('WatchlistId')) || [];
+
+const handleAddToWatchlist = async () => {
+  try {
+    const response = await axios.post('https://growup-ffp3.onrender.com/stocks/addwatchlist', {
+      WatchlistId: watchlist,
+      stockName: symbol
+    });
+
+    // Optional: handle response, maybe show success message
+    console.log('Added to watchlist:', response.data);
+
+  } catch (err) {
+    console.error('Failed to add to watchlist:', err);
+  }
+};
+
 
   if (loading) return <div className="p-4 text-center">Loading stock data...</div>;
   if (error) return <div className="p-4 text-center text-red-600">Error: {error}</div>;
@@ -111,7 +145,7 @@ const StockDetails = ({ symbol = 'IRFC' }) => {
           <div className="flex space-x-2">
           <button 
               className={`px-3 py-1 rounded ${timeframe === '1d' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-              onClick={() => setTimeframe('1d')}
+              onClick={() => handleAddToWatchlist()}
             >
               Add To Watchlist
             </button>
