@@ -23,8 +23,8 @@ const Home = () => {
       setIsLoading(true);
       try {
         const endpoint = activeTab === "topIndices" 
-          ? "http://127.0.0.1:5000/api/indices" 
-          : "http://127.0.0.1:5000/api/market-status";
+          ? `${import.meta.env.VITE_FLASK_BACKEND_URL}/api/indices`
+          : `${import.meta.env.VITE_FLASK_BACKEND_URL}/api/market-status`;
         
         const response = await fetch(endpoint);
         if (!response.ok) throw new Error("Failed to fetch data");
