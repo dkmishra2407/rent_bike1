@@ -261,7 +261,9 @@ import time
 import json
 import datetime
 import uuid
-
+from flask_cors import CORS
+from pymongo import MongoClient
+from bson.objectid import ObjectId
 app = Flask(__name__)
 CORS(app)
 nse = NSELive()
