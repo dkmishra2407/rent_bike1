@@ -3,10 +3,16 @@ const app = express()
 const UserRoutes = require('./Routes/UserRoutes')
 const WatchlistRoutes = require('./Routes/WatchlistRoutes')
 require('dotenv').config();
+const cors = require('cors');
 const db = require('./dbconfig/dbconfig');
 const HoldingRoutes = require('./Routes/HoldingRoutes');
 const ExchangeRoutes = require('./Routes/ExchangeRoutes');
 app.use(express.json())
+app.use(cors({
+    origin: '*', // <-- You can restrict to specific origins like 'http://localhost:3000'
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
 app.use('/', UserRoutes)
 app.use('/stocks',WatchlistRoutes);
 app.use('/holding', HoldingRoutes);
