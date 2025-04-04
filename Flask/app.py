@@ -261,10 +261,9 @@ import time
 import json
 import datetime
 import uuid
-from pymongo import MongoClient
-from bson.objectid import ObjectId
 
 app = Flask(__name__)
+CORS(app)
 nse = NSELive()
 
 # Connect to MongoDB
