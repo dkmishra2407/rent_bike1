@@ -28,14 +28,14 @@ const StockDetails = () => {
         setLoading(true);
 
         // Fetch stock quote
-        const quoteResponse = await fetch(`http://127.0.0.1:5000/api/stock-quote/${symbol}`);
+        const quoteResponse = await fetch(`${import.meta.env.VITE_FLASK_BACKEND_URL}/api/stock-quote/${symbol}`);
         if (!quoteResponse.ok) {
           throw new Error(`Failed to fetch stock data: ${quoteResponse.statusText}`);
         }
         const quoteData = await quoteResponse.json();
 
         // Fetch graph data
-        const graphResponse = await fetch(`http://127.0.0.1:5000/api/graph-data/${symbol}`);
+        const graphResponse = await fetch(`${import.meta.env.VITE_FLASK_BACKEND_URL}/api/graph-data/${symbol}`);
         if (!graphResponse.ok) {
           throw new Error(`Failed to fetch graph data: ${graphResponse.statusText}`);
         }
