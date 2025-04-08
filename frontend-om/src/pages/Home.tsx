@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { BarChart3, TrendingUp, Shield, DollarSign, Clock, LineChart, ArrowUpRight, ArrowDownRight, Info } from "lucide-react";
 
 const Home = () => {
@@ -10,6 +11,7 @@ const Home = () => {
     yearLow: number;
     percentChange: number;
   }
+  const navigate=useNavigate()
 
   const [stocks, setStocks] = useState<Stock[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -121,10 +123,14 @@ const Home = () => {
             animate="visible"
             transition={{ delay: 0.4 }}
           >
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
+            <button 
+             onClick={() => navigate('/stocks')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition transform hover:-translate-y-1">
               Start Trading Now
             </button>
-            <button className="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+            <button
+            onClick={() => navigate('/about')}
+            className="bg-white hover:bg-gray-100 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
               Take the Tour
             </button>
           </motion.div>

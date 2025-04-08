@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const  holdingController  = require('../Controller/HoldingController');
 
-router.get('/getholding:HoldingId', holdingController.getHoldings);
+router.get('/getholding/:HoldingId', holdingController.getHoldings);
 // router.post('/addholding', holdingController.addHolding);
 // router.delete('/remove', holdingController.removeHolding);
 
