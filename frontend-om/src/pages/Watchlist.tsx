@@ -26,8 +26,8 @@ function Watchlist() {
   const token = localStorage.getItem('token');
 
   // Transform individual stock response
-  const transformSingleStock = (data: any): Stock => ({
-    symbol: data.symbol || '',
+  const transformSingleStock = (data: any, symbol: any): Stock => ({
+    symbol: symbol || '',
     name: data.name || data.companyName || '',
     basePrice:  data.intraDayHighLow?.value || data.currentPrice || 0,
     change: data.change || data.priceChange || 0,
@@ -53,7 +53,6 @@ function Watchlist() {
           },
         }
       );
-
       if (!response.ok) {
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
@@ -85,7 +84,7 @@ function Watchlist() {
       }
 
       const data = await response.json();
-      return transformSingleStock(data);
+      return transformSingleStock(data,symbol);
     } catch (error) {
       console.error(`Error fetching data for ${symbol}:`, error);
       return null;
@@ -159,7 +158,7 @@ function Watchlist() {
       }
 
       const data = await response.json();
-      setSearchResults([transformSingleStock(data)]);
+      setSearchResults([transformSingleStock(data,query)]);
     } catch (error) {
       console.error('Error searching stocks:', error);
       setSearchResults([]);
@@ -196,7 +195,6 @@ function Watchlist() {
 
   const openStockDetails = (symbol: string) => {
     console.log(`Opening details for ${symbol}`);
-    // Example: navigate(`/stock/${symbol}`);
   };
 
   return (
@@ -293,7 +291,7 @@ function Watchlist() {
                   watchlist.map((stock) => (
                     <tr key={stock.symbol} className="border-b border-gray-100 hover:bg-blue-50 transition-colors">
                      
-                      <td className="px-4 md:px-6 py-3 text-gray-600">{names}</td>
+                      <td className="px-4 md:px-6 py-3 text-gray-600">{stock.symbol}</td>
                       <td className="px-4 md:px-6 py-3 text-right font-mono text-gray-800">
                         {stock.basePrice.toFixed(2)}
                       </td>
