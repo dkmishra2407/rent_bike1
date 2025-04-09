@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Star, Trash2, TrendingUp, ArrowUpRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Stock {
   symbol: string;
@@ -289,9 +290,17 @@ function Watchlist() {
                   </tr>
                 ) : (
                   watchlist.map((stock) => (
-                    <tr key={stock.symbol} className="border-b border-gray-100 hover:bg-blue-50 transition-colors">
-                     
-                      <td className="px-4 md:px-6 py-3 text-gray-600">{stock.symbol}</td>
+                    <tr  key={stock.symbol}
+                                          className="hover:bg-gray-50 transition-colors duration-200"
+                                        >
+                                          <td className="px-6 py-4 whitespace-nowrap">
+                                            <Link
+                                              to={`/stocks/${stock.symbol}`}
+                                              className="text-blue-600 hover:text-blue-900 font-medium"
+                                            >
+                                              {stock.symbol}
+                                            </Link>
+                                          </td>
                       <td className="px-4 md:px-6 py-3 text-right font-mono text-gray-800">
                         {stock.basePrice.toFixed(2)}
                       </td>

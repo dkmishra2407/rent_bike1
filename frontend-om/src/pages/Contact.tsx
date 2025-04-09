@@ -144,15 +144,15 @@ export default function ContactPage() {
             <h2 className="text-2xl font-semibold mb-6">Contact Information</h2>
             <div className="space-y-6">
               {[
-                { icon: <MapPin className="h-5 w-5 text-blue-600" />, label: "Our Location", value: "123 Business Ave, NY" },
-                { icon: <Phone className="h-5 w-5 text-blue-600" />, label: "Phone Number", value: "+1 (555) 123-4567" },
-                { icon: <Mail className="h-5 w-5 text-blue-600" />, label: "Email Address", value: "contact@brandname.com" },
+                { icon: <MapPin className="h-5 w-5 text-blue-600" />, label: "Our Location", value: "Pune Institute of Computer Technology" },
+                { icon: <Phone className="h-5 w-5 text-blue-600" />, label: "Phone Number", value: "9209415157" },
+                { icon: <Mail className="h-5 w-5 text-blue-600" />, label: "Email Address", value: "growup@gmail.com" },
                 {
                   icon: <Clock className="h-5 w-5 text-blue-600" />,
                   label: "Business Hours",
                   value: (
                     <>
-                      <p>Mon - Fri: 9am - 5pm</p>
+                      <p>Mon - Fri: 9am - 3:30pm</p>
                       <p>Sat - Sun: Closed</p>
                     </>
                   )

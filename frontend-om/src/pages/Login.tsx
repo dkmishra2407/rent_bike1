@@ -45,7 +45,7 @@ export default function LoginPage() {
       setAuth(user, token);
 
       // Redirect or show success
-      navigate("/dashboard");
+      navigate("/stocks");
     } catch (error: any) {
       console.error("Login failed:", error.message);
       alert(error.message);

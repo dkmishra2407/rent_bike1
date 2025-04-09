@@ -46,7 +46,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     setAuth(user, token)
 
     // Redirect to dashboard or homepage
-    navigate("/dashboard") // Change this path as needed
+    navigate("/stocks") // Change this path as needed
   } catch (err: any) {
     console.error("Signup error:", err.message)
     alert(err.message)
