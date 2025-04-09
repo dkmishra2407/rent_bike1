@@ -253,6 +253,8 @@
 #      WE HAVE TO STORE ALL THE REQUESTS THAT ARE COME WHEN MARKET IS CLSOED IN THE QUEUE ONCE MARKET IS OPENED WE HAVE TO SEND ALL THE REQUESTS TO THE API AND CONTINOUSLY CHECK THAT MARKET IS COME AT REQUEST AT THAT PRICE THEN BUY/SELL STOCK
 
 #     WRITE ONLY ROUTES FOR THE APIS DO NOT WRITE UI 
+
+
 from flask import Flask, jsonify, request
 from jugaad_data.nse import NSELive
 import pandas as pd
@@ -265,6 +267,7 @@ import uuid
 from flask_cors import CORS
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+from nsepython import nse_get_top_gainers, nse_get_top_losers
 from dotenv import load_dotenv
 app = Flask(__name__)
 CORS(app)
@@ -566,16 +569,25 @@ def place_order():
             "order_id": order_id,
             "order": serialize_doc(order)
         })
-  
-
-
     
     except Exception as e:
         # Log the full error for debugging
         app.logger.error(f"Order placement error: {str(e)}", exc_info=True)
         return jsonify({"error": "An error occurred while processing your order"}), 500
     
+@app.route('/api/gainer-losers', methods=['GET'])
+def get_gainers_and_losers():
+    gainers = nse_get_top_gainers()
+    losers = nse_get_top_losers()
 
+    gainers_df = pd.DataFrame(gainers)
+    losers_df = pd.DataFrame(losers)
+    
+    return jsonify({
+        "gainers": gainers_df.to_dict(orient="records"),
+        "losers": losers_df.to_dict(orient="records")
+    })
+    
 @app.route('/api/orders', methods=['GET'])
 def get_orders():
     """Get all orders with optional filtering"""
