@@ -25,9 +25,8 @@ function App() {
       name: "Devansh Mishra",
       role: "Founder & CEO",
       image: devansh,
-      bio: "Former VP at Goldman Sachs with 15+ years in fintech. Led multiple successful startups and pioneered AI-driven trading algorithms.",
+      bio: "Student of pune institute of computer technologoy and a passionate developer. Worked on various projects in AI/ML and High-Frequency Trading.",
       expertise: [  "AI/ML","High-Frequency Trading", "Cloud Infrastructure"],
-      achievements: ["Forbes 30 Under 30", "Women in Fintech Award"],
       social: {
         linkedin: "https://www.linkedin.com/in/devansh-mishra-903357295/",
         twitter: "#",
@@ -40,8 +39,7 @@ function App() {
       image: hitesh,
       bio: "Ex-Google engineer specialized in algorithmic trading systems. Built scalable systems processing millions of transactions per second.",
       expertise: ["System Architecture", "High-Frequency Trading", "Cloud Infrastructure"],
-      achievements: ["Patent Holder", "Tech Innovation Award"],
-      social: {
+      social:{
         linkedin: "#",
         twitter: "#",
         github: "#"
@@ -53,7 +51,6 @@ function App() {
       image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
       bio: "Full-stack developer with expertise in real-time trading platforms. Previously led development at Robinhood.",
       expertise: ["React/Node.js", "WebSocket", "Trading Systems"],
-      achievements: ["Open Source Contributor", "Best Code Quality Award"],
       social: {
         linkedin: "#",
         twitter: "#",
@@ -66,7 +63,6 @@ function App() {
       image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400",
       bio: "Security specialist focusing on blockchain and cryptocurrency. Built secure trading systems for major crypto exchanges.",
       expertise: ["Blockchain", "Cryptography", "Security"],
-      achievements: ["Security Excellence Award", "Blockchain Pioneer"],
       social: {
         linkedin: "#",
         twitter: "#",

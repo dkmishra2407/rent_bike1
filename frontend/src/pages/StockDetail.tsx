@@ -119,7 +119,6 @@ const StockDetails = () => {
   };
   
   const watchlist = user.WatchlistId || [];
-  console.log(watchlist)
   const handleAddToWatchlist = async () => {
     try {
       const response = await axios.post('https://growup-ffp3.onrender.com/stocks/addwatchlist', {
