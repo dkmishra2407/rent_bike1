@@ -2,7 +2,7 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
-from jugaad_data.nse import NSELive
+from jugaad_data.nse   import NSELive
 from cachetools import TTLCache
 import asyncio
 import time
