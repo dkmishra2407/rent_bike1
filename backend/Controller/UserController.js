@@ -28,6 +28,7 @@ module.exports.registerUser = async (req, res) => {
       return res.status(400).json({ msg: "Please enter all fields" });
     }
     
+    
     const user = await UserModel.findOne({ Email });
     if (user) {
       return res.status(400).json({ msg: "User already exists" });

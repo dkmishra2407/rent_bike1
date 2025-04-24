@@ -7,6 +7,7 @@ const cors = require('cors');
 const db = require('./dbconfig/dbconfig');
 const HoldingRoutes = require('./Routes/HoldingRoutes');
 const ExchangeRoutes = require('./Routes/ExchangeRoutes');
+const messageRoutes =require('./Routes/MessageRoutes');
 app.use(express.json())
 app.use(cors({
     origin: '*', // <-- You can restrict to specific origins like 'http://localhost:3000'
@@ -17,6 +18,7 @@ app.use('/', UserRoutes)
 app.use('/stocks',WatchlistRoutes);
 app.use('/holding', HoldingRoutes);
 app.use('/exchange', ExchangeRoutes);
+app.use("/api", messageRoutes);
 const port=process.env.PORT;
 app.get('/', (req, res) => {
     return res.json( {success:true,message:"Hello from backend"})

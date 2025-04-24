@@ -56,13 +56,15 @@ def serialize_doc(doc):
     return doc
 
 
+
 @app.route('/api/place-order', methods=['POST'])
 def place_order():
     try:
         data = request.json
+        print(data)
         required_fields = ['symbol', 'quantity', 'order_type', 'target_price', 'Email', 'OrderId', 'HoldingId']
+
         # market_open = check_market_status()
-        # market_open = True
         # if not market_open:
         #     return jsonify({"error": "Market is closed. Cannot place orders."}), 400
 

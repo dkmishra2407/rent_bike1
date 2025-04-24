@@ -22,77 +22,89 @@ const StockDetails = () => {
   const ws = useRef(null);
 
   const [status, setStatus] = useState("Connecting...");
-  
-  // Update symbol state from route params
+
   useEffect(() => {
     if (paramSymbol) {
       setSymbol(paramSymbol);
-      // Initialize limit price with current price
-      if (stockData?.lastPrice) {
-        setLimitPrice(stockData.lastPrice.toFixed(2));
-      }
     }
-  }, [paramSymbol, stockData]);
+  }, [paramSymbol]);
 
-  // WebSocket and data fetching effect
+  // Set limit price from live data
   useEffect(() => {
-    if (!symbol) return; // Don't connect if symbol is empty
-    
-    const fetchData = async () => {
+    if (stockData?.lastPrice) {
+      setLimitPrice(stockData.lastPrice.toFixed(2));
+    }
+  }, [stockData?.lastPrice]);
+
+  // WebSocket and data fetch logic
+  useEffect(() => {
+    if (!symbol) return;
+
+    const fetchInitialData = async () => {
       try {
         setLoading(true);
-        
+
+        const response = await axios.get(
+          `${import.meta.env.VITE_FLASK_BACKEND_URL}/api/stock-quote/${symbol}`)
+        if (!response.data) {
+          throw new Error("No data received from API");
+        }
+        setStockData(response.data);
+        setLoading(false);
+
         // Connect to WebSocket
-        ws.current = new WebSocket("ws://localhost:8000/ws");
+    //     ws.current = new WebSocket("ws://localhost:8000/ws");
 
-        ws.current.onopen = () => {
-          setStatus("Connected");
-          ws.current.send(JSON.stringify({ action: "subscribe", symbol }));
-        };
+    //     ws.current.onopen = () => {
+    //       setStatus("Connected");
+    //       ws.current.send(JSON.stringify({ action: "subscribe", symbol }));
+    //     };
 
-        ws.current.onmessage = (event) => {
-          const data = JSON.parse(event.data);
-          if (data.T === "q" && data.S === symbol) {
-            console.log("data from websocket", data);
-            setStockData(data);
-            setLoading(false);
-          }
-        };
+    //     ws.current.onmessage = (event) => {
+    //       const data = JSON.parse(event.data);
+    //       if (data.T === "q" && data.S === symbol) {
+    //         console.log("data from websocket", data);
+    //         setStockData(data);
+    //         setLoading(false);
+    //       } else if (data.error) {
+    //         setError(data.error);
+    //         setLoading(false);
+    //       }
+    //     };
 
-        ws.current.onerror = () => setStatus("Connection error");
-        ws.current.onclose = () => setStatus("Disconnected");
-        
-        // Fetch graph data
+    //     ws.current.onerror = () => {
+    //       setStatus("Connection error");
+    //     };
+
+    //     ws.current.onclose = () => {
+    //       setStatus("Disconnected");
+    //     };
+
+    //     // Fetch graph data
         try {
-          const graphResponse = await fetch(`${import.meta.env.VITE_FLASK_BACKEND_URL}/api/graph-data/${symbol}`);
-          if (!graphResponse.ok) {
-            throw new Error(`Failed to fetch graph data: ${graphResponse.statusText}`);
+          const response = await fetch(
+            `${import.meta.env.VITE_FLASK_BACKEND_URL}/api/graph-data/${symbol}`
+          );
+          if (!response.ok) {
+            throw new Error(`Graph fetch failed: ${response.statusText}`);
           }
-          const graphData = await graphResponse.json();
-          setGraphData(graphData || []);
+          const data = await response.json();
+          setGraphData(data || []);
         } catch (graphErr) {
           console.error("Error fetching graph data:", graphErr);
-          setError(`Failed to fetch graph data: ${graphErr.message}`);
+          setError(`Graph data error: ${graphErr.message}`);
         }
       } catch (err) {
-        console.error("Error initializing data:", err);
-        setError(`Failed to initialize: ${err.message}`);
+        console.error("Error initializing:", err);
+        setError(`Initialization error: ${err.message}`);
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchInitialData();
 
-    // Cleanup function
-    return () => {
-      if (ws.current) {
-        if (ws.current.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify({ action: "unsubscribe", symbol }));
-        }
-        ws.current.close();
-      }
-    };
   }, [symbol]);
+
 
   const formatGraphData = (data) => {
     if (!data || data.length === 0) return [];
@@ -118,7 +130,7 @@ const StockDetails = () => {
     }
   };
   
-  const watchlist = user.WatchlistId || [];
+  const watchlist = user.WatchlistId    || [];
   const handleAddToWatchlist = async () => {
     try {
       const response = await axios.post('https://growup-ffp3.onrender.com/stocks/addwatchlist', {
@@ -131,13 +143,13 @@ const StockDetails = () => {
     }
   };
 
-  const handleBuy = async () => {
+  const handleBuy = async (order_t) => {
     if (!quantity || quantity <= 0) {
       setOrderStatus({ success: false, message: 'Please enter a valid quantity' });
       return;
     }
   
-    if (orderType === 'LIMIT' && (!limitPrice || isNaN(limitPrice))) {
+    if (orderType === 'LIMIT' && (!limitPrice || isNaN(limitPrice) || limitPrice <= 0)) {
       setOrderStatus({ success: false, message: 'Please enter a valid limit price' });
       return;
     }
@@ -146,27 +158,28 @@ const StockDetails = () => {
       setIsBuying(true);
       setOrderStatus(null);
   
-      // Get user info from local storage or context
-      const user = JSON.parse(localStorage.getItem('user'));
+      // Get user info from local storage
+      
       if (!user) {
         throw new Error('User not authenticated');
       }
   
+      // Generate unique IDs (you might want to use a proper UUID generator)
+      
+      
       // Prepare order data according to backend expectations
       const orderData = {
-        UserId: user._id, // Assuming your user object has _id
-        Type: 'BUY',      // Explicitly setting as BUY
-        Price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.lastPrice,
-        Qty: parseInt(quantity),
-        Name: stockData.name || symbol, // Use stock name if available, otherwise symbol
-        Symbol: symbol,
-        Time: new Date().toISOString(),
-        ExchangeId: user.ExchangeId, // Generate unique exchange ID
-        HoldingId: user.HoldingId // Typically this would be user-specific
+        symbol: symbol.toUpperCase(),
+        quantity: parseInt(quantity),
+        order_type: order_t,
+        target_price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.intraDayHighLow.value,
+        Email: user.Email,  // Assuming your user object has email
+        OrderId: user.ExchangeId,
+        HoldingId: user.HoldingId   // Use existing or create new holding ID
       };
   
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/exchange/buy`,
+        "http://192.168.141.176:5000/api/place-order",
         orderData,
         {
           headers: {
@@ -178,116 +191,125 @@ const StockDetails = () => {
   
       setOrderStatus({ 
         success: true, 
-        message: 'Buy order placed successfully!',
+        message: `${order_t} order placed successfully!`,
         details: response.data
       });
   
-      // Optionally update local user balance if needed
-      if (response.data.user) {
-        localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Update local user balance if needed
+      if (response.data.order) {
+        // You might want to fetch updated user data from backend instead
+        const updatedUser = { ...user };
+        if (response.data.order.order_type === 'BUY') {
+          const cost = response.data.order.quantity * response.data.order.target_price;
+          updatedUser.Balance = (updatedUser.Balance || 0) - cost;
+        }
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       }
+  
+      // Refresh user holdings or other data if needed
+      // await fetchUserHoldings();
   
       console.log('Buy order response:', response.data);
     } catch (err) {
       console.error('Error placing buy order:', err);
       setOrderStatus({ 
         success: false, 
-        message: err.response?.data?.msg || err.message || 'Failed to place buy order'
+        message: err.response?.data?.error || err.message || 'Failed to place buy order'
       });
     } finally {
       setIsBuying(false);
     }
   };
 
-  const handleSell = async () => {
-    if (!quantity || quantity <= 0) {
-      setOrderStatus({ success: false, message: 'Please enter a valid quantity' });
-      return;
-    }
+  // const handleSell = async () => {
+  //   if (!quantity || quantity <= 0) {
+  //     setOrderStatus({ success: false, message: 'Please enter a valid quantity' });
+  //     return;
+  //   }
   
-    if (orderType === 'LIMIT' && (!limitPrice || isNaN(limitPrice))) {
-      setOrderStatus({ success: false, message: 'Please enter a valid limit price' });
-      return;
-    }
+  //   if (orderType === 'LIMIT' && (!limitPrice || isNaN(limitPrice))) {
+  //     setOrderStatus({ success: false, message: 'Please enter a valid limit price' });
+  //     return;
+  //   }
   
-    try {
-      setIsSelling(true);
-      setOrderStatus(null);
+  //   try {
+  //     setIsSelling(true);
+  //     setOrderStatus(null);
   
-      const user = JSON.parse(localStorage.getItem('user'));
-      if (!user) throw new Error('User not authenticated');
+  //     const user = JSON.parse(localStorage.getItem('user'));
+  //     if (!user) throw new Error('User not authenticated');
   
-      // 1. First fetch current holdings
-      const holdingsResponse = await axios.get(
-        `${import.meta.env.VITE_BACKEND_URL}/holding/getholding/${user.HoldingId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+  //     // 1. First fetch current holdings
+  //     const holdingsResponse = await axios.get(
+  //       `${import.meta.env.VITE_BACKEND_URL}/holding/getholding/${user.HoldingId}`,
+  //       {
+  //         headers: {
+  //           'Authorization': `Bearer ${localStorage.getItem('token')}`
+  //         }
+  //       }
+  //     );
   
-      // 2. Check if the response contains holdings
-      if (!holdingsResponse.data.holdings) {
-        throw new Error('No holdings data received');
-      }
+  //     // 2. Check if the response contains holdings
+  //     if (!holdingsResponse.data.holdings) {
+  //       throw new Error('No holdings data received');
+  //     }
   
-      // 3. Find the specific stock in holdings
-      const stockHolding = holdingsResponse.data.holdings.find(
-        h => h.Symbol === symbol
-      );
+  //     // 3. Find the specific stock in holdings
+  //     const stockHolding = holdingsResponse.data.holdings.find(
+  //       h => h.Symbol === symbol
+  //     );
   
-      // 4. Verify ownership and quantity
-      if (!stockHolding) {
-        throw new Error(`You don't own ${symbol}`);
-      }
+  //     // 4. Verify ownership and quantity
+  //     if (!stockHolding) {
+  //       throw new Error(`You don't own ${symbol}`);
+  //     }
   
-      if (stockHolding.Quantity < quantity) {
-        throw new Error(`Only ${stockHolding.Quantity} shares available to sell`);
-      }
+  //     if (stockHolding.Quantity < quantity) {
+  //       throw new Error(`Only ${stockHolding.Quantity} shares available to sell`);
+  //     }
   
-      // 5. Proceed with sell order
-      const orderData = {
-        UserId: user._id,
-        Type: 'SELL',
-        Price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.lastPrice,
-        Qty: parseInt(quantity),
-        Name: stockData.name || symbol,
-        Symbol: symbol,
-        Time: new Date().toISOString(),
-        ExchangeId: `EXCH-${user._id}-${Date.now()}`,
-        HoldingId: user.HoldingId
-      };
+  //     // 5. Proceed with sell order
+  //     const orderData = {
+  //       UserId: user._id,
+  //       Type: 'SELL',
+  //       Price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.lastPrice,
+  //       Qty: parseInt(quantity),
+  //       Name: stockData.name || symbol,
+  //       Symbol: symbol,
+  //       Time: new Date().toISOString(),
+  //       ExchangeId: `EXCH-${user._id}-${Date.now()}`,
+  //       HoldingId: user.HoldingId
+  //     };
   
-      const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/exchange/sell`,
-        orderData,
-        {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        }
-      );
+  //     const response = await axios.post(
+  //       `${import.meta.env.VITE_BACKEND_URL}/exchange/sell`,
+  //       orderData,
+  //       {
+  //         headers: {
+  //           'Authorization': `Bearer ${localStorage.getItem('token')}`
+  //         }
+  //       }
+  //     );
   
-      setOrderStatus({ 
-        success: true, 
-        message: 'Sold successfully!',
-        details: response.data
-      });
+  //     setOrderStatus({ 
+  //       success: true, 
+  //       message: 'Sold successfully!',
+  //       details: response.data
+  //     });
   
-      // Refresh holdings after successful sale
-      fetchUserHoldings();
+  //     // Refresh holdings after successful sale
+  //     fetchUserHoldings();
       
-    } catch (err) {
-      console.error('Sell error:', err);
-      setOrderStatus({
-        success: false,
-        message: err.response?.data?.message || err.message || 'Sell failed'
-      });
-    } finally {
-      setIsSelling(false);
-    }
-  };
+  //   } catch (err) {
+  //     console.error('Sell error:', err);
+  //     setOrderStatus({
+  //       success: false,
+  //       message: err.response?.data?.message || err.message || 'Sell failed'
+  //     });
+  //   } finally {
+  //     setIsSelling(false);
+  //   }
+  // };
 
   // Define fetchUserHoldings function
   const fetchUserHoldings = async () => {
@@ -399,14 +421,14 @@ const StockDetails = () => {
           
           <div className="flex items-end space-x-2">
             <button
-              onClick={handleBuy}
+              onClick={() => handleBuy('BUY')}
               disabled={isBuying || isSelling}
               className={`px-4 py-2 rounded text-white ${isBuying ? 'bg-blue-400' : 'bg-green-600 hover:bg-green-700'} flex-1`}
             >
               {isBuying ? 'Buying...' : 'Buy'}
             </button>
             <button
-              onClick={handleSell}
+              onClick={() => handleBuy('SELL')}
               disabled={isBuying || isSelling}
               className={`px-4 py-2 rounded text-white ${isSelling ? 'bg-blue-400' : 'bg-red-600 hover:bg-red-700'} flex-1`}
             >

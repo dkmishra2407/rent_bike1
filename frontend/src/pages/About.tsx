@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Users, Target, Globe, Github, Linkedin, Twitter, Award, Briefcase, Code, Coffee, Database, Server, Cloud, Brain, Link2 } from 'lucide-react';
 import devansh from "../../assets/devansh.jpg"
 import hitesh from "../../assets/hitesh.jpg"
+import om from "../../assets/om.jpeg"
+import om1 from "../../assets/om1.jpeg"
+import Rohit from "../../assets/Rohit.jpeg"
 function App() {
   const [activeTab, setActiveTab] = useState('team');
   const [hoveredStat, setHoveredStat] = useState<number | null>(null);
@@ -22,7 +25,7 @@ function App() {
 
   const team = [
     {
-      name: "Devansh Mishra",
+      name: "Devansh Kishorprasad Mishra",
       role: "Founder & CEO",
       image: devansh,
       bio: "Former VP at Goldman Sachs with 15+ years in fintech. Led multiple successful startups and pioneered AI-driven trading algorithms.",
@@ -35,7 +38,7 @@ function App() {
       }
     },
     {
-      name: "Hitesh Pawar",
+      name: "Hitesh Prakash Pawar",
       role: "CTO & Co-founder",
       image: hitesh,
       bio: "Ex-Google engineer specialized in algorithmic trading systems. Built scalable systems processing millions of transactions per second.",
@@ -48,22 +51,22 @@ function App() {
       }
     },
     {
-      name: "David Park",
+      name: "Om Nilesh Papdiwal",
       role: "Lead Developer",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+      image: om1,
       bio: "Full-stack developer with expertise in real-time trading platforms. Previously led development at Robinhood.",
       expertise: ["React/Node.js", "WebSocket", "Trading Systems"],
       achievements: ["Open Source Contributor", "Best Code Quality Award"],
       social: {
         linkedin: "#",
         twitter: "#",
-        github: "#"
+        github: "https://github.com/OmPapdiwal"
       }
     },
     {
-      name: "Emily Watson",
+      name: "Rohit Govind Patil",
       role: "Senior Developer",
-      image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=400",
+      image: Rohit,
       bio: "Security specialist focusing on blockchain and cryptocurrency. Built secure trading systems for major crypto exchanges.",
       expertise: ["Blockchain", "Cryptography", "Security"],
       achievements: ["Security Excellence Award", "Blockchain Pioneer"],

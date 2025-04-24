@@ -97,11 +97,11 @@ const Footer = () => {
               </h4>
               <ul className="space-y-2">
                 {[
-                  { label: "Trading Platform", icon: DollarSign },
-                  { label: "Market Analysis", icon: TrendingUp },
-                  { label: "Learning Resources", icon: BookOpen },
-                  { label: "My Portfolio", icon: User },
-                  { label: "Help Center", icon: HelpCircle }
+                   { label: "Trading Platform", icon: DollarSign, url: "/stocks" },
+                   { label: "Market Analysis", icon: TrendingUp, url: "/watchlist" },
+                   { label: "Learning Resources", icon: BookOpen, url: "/learn" },
+                   { label: "My Portfolio", icon: User, url: "/holding" },
+                   { label: "Help Center", icon: HelpCircle, url: "/contact" }
                 ].map((link, i) => (
                   <motion.li key={i} whileHover={{ x: 5 }}>
                     <a href="#" className="flex items-center hover:text-blue-400 transition-colors duration-200">
