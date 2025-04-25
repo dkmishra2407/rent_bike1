@@ -1,81 +1,196 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronDown, ChevronUp } from "lucide-react"
-import { useState } from "react"
+import { ChevronDown, ChevronUp, Search, BookOpen, Video, FileText, Award, Clock, Star, ArrowRight } from "lucide-react"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+
+interface FAQItemProps {
+  question: string
+  answer: React.ReactNode
+}
+
+interface LearningResource {
+  title: string
+  type: 'video' | 'article' | 'course'
+  duration: string
+  level: 'beginner' | 'intermediate' | 'advanced'
+  link: string
+  description: string
+}
 
 export default function LearnPage() {
   const [activeTab, setActiveTab] = useState('basics')
+  const [progress, setProgress] = useState<Record<string, number>>({
+    basics: 0,
+    analysis: 0,
+    strategies: 0,
+    advanced: 0
+  })
+
+  const learningResources: LearningResource[] = [
+    {
+      title: "Stock Market Basics for Beginners",
+      type: "video",
+      duration: "15 min",
+      level: "beginner",
+      link: "https://youtu.be/Xn7KWR9EOGQ?si=1871RG0QzL8uov4j",
+      description: "Learn the fundamentals of stock market investing"
+    },
+    {
+      title: "Technical Analysis Masterclass",
+      type: "course",
+      duration: "1.2 hours",
+      level: "intermediate",
+      link: "https://youtu.be/eynxyoKgpng?si=2iGn1zQydM0-2zu8",
+      description: "Master technical analysis techniques"
+    },
+    {
+      title: "Advanced Trading Strategies",
+      type: "article",
+      duration: "1 hours",
+      level: "advanced",
+      link: "https://www.youtube.com/live/zHOG2T9Mr_M?si=WK8To2REUvVhfPZr",
+      description: "Learn advanced trading strategies"
+    }
+  ]
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      
-
-      <main className="flex-1 py-2">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
+      <main className="py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             {/* Page Header */}
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Stock Market Education</h1>
-              <p className="text-gray-600">
-                Learn everything you need to know about investing in the stock market.
+            <motion.div 
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 text-center"
+            >
+              <h1 className="text-4xl font-bold text-gray-900 mb-4">Stock Market Education</h1>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                Master the art of investing with our comprehensive learning resources and expert guidance.
               </p>
+            </motion.div>
+
+            {/* Quick Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+              <StatCard icon={<BookOpen />} title="Learning Modules" value="4" />
+              <StatCard icon={<Video />} title="Video Tutorials" value="12+" />
+              <StatCard icon={<FileText />} title="Articles" value="20+" />
+              <StatCard icon={<Award />} title="Certificates" value="3" />
             </div>
 
             {/* Tabs */}
-            <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
               <div className="border-b border-gray-200">
                 <div className="flex overflow-x-auto">
-                  <button 
-                    className={`px-6 py-3 font-medium text-sm border-b-2 ${activeTab === 'basics' ? 'border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700 border-transparent'}`}
-                    onClick={() => setActiveTab('basics')}
-                  >
-                    Basics
-                  </button>
-                  <button 
-                    className={`px-6 py-3 font-medium text-sm border-b-2 ${activeTab === 'analysis' ? 'border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700 border-transparent'}`}
-                    onClick={() => setActiveTab('analysis')}
-                  >
-                    Analysis
-                  </button>
-                  <button 
-                    className={`px-6 py-3 font-medium text-sm border-b-2 ${activeTab === 'strategies' ? 'border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700 border-transparent'}`}
-                    onClick={() => setActiveTab('strategies')}
-                  >
-                    Strategies
-                  </button>
-                  <button 
-                    className={`px-6 py-3 font-medium text-sm border-b-2 ${activeTab === 'advanced' ? 'border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700 border-transparent'}`}
-                    onClick={() => setActiveTab('advanced')}
-                  >
-                    Advanced
-                  </button>
+                  {['basics', 'analysis', 'strategies', 'advanced'].map((tab) => (
+                    <button
+                      key={tab}
+                      className={`px-6 py-4 font-medium text-sm border-b-2 transition-all duration-200 ${
+                        activeTab === tab
+                          ? 'border-blue-500 text-blue-600'
+                          : 'text-gray-500 hover:text-gray-700 border-transparent'
+                      }`}
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      <div className="flex items-center">
+                        <span className="capitalize">{tab}</span>
+                        <div className="ml-2 w-16 h-1 bg-gray-200 rounded-full">
+                          <div
+                            className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                            style={{ width: `${progress[tab]}%` }}
+                          />
+                        </div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {/* Tab Content */}
               <div className="p-6">
-                {activeTab === 'basics' && (
-                  <BasicsTab />
-                )}
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {activeTab === 'basics' && <BasicsTab />}
+                    {activeTab === 'analysis' && <AnalysisTab />}
+                    {activeTab === 'strategies' && <StrategiesTab />}
+                    {activeTab === 'advanced' && <AdvancedTab />}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
 
-                {activeTab === 'analysis' && (
-                  <AnalysisTab />
-                )}
-
-                {activeTab === 'strategies' && (
-                  <StrategiesTab />
-                )}
-
-                {activeTab === 'advanced' && (
-                  <AdvancedTab />
-                )}
+            {/* Learning Resources */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Recommended Learning Resources</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {learningResources.map((resource, index) => (
+                  <ResourceCard key={index} resource={resource} />
+                ))}
               </div>
             </div>
           </div>
         </div>
       </main>
     </div>
+  )
+}
+
+function StatCard({ icon, title, value }: { icon: React.ReactNode, title: string, value: string }) {
+  return (
+    <div className="bg-white rounded-lg shadow-md p-6 flex items-center space-x-4">
+      <div className="p-3 bg-blue-100 rounded-lg text-blue-600">
+        {icon}
+      </div>
+      <div>
+        <p className="text-sm text-gray-600">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function ResourceCard({ resource }: { resource: LearningResource }) {
+  return (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200"
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            {resource.type === 'video' && <Video className="h-5 w-5 text-red-500" />}
+            {resource.type === 'article' && <FileText className="h-5 w-5 text-blue-500" />}
+            {resource.type === 'course' && <BookOpen className="h-5 w-5 text-green-500" />}
+            <span className="text-sm text-gray-500">{resource.duration}</span>
+          </div>
+          <span className={`px-2 py-1 rounded-full text-xs ${
+            resource.level === 'beginner' ? 'bg-green-100 text-green-800' :
+            resource.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+            'bg-red-100 text-red-800'
+          }`}>
+            {resource.level}
+          </span>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">{resource.title}</h3>
+        <p className="text-gray-600 mb-4">{resource.description}</p>
+        <a
+          href={resource.link}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800"
+        >
+          Start Learning <ArrowRight className="ml-2 h-4 w-4" />
+        </a>
+      </div>
+    </motion.div>
   )
 }
 
@@ -392,29 +507,29 @@ function AnalysisTab() {
         <VideoCard
           title="Fundamental Analysis Basics"
           description="How to analyze a company's financial health."
-          videoId="7gkQHSW3hkE"
-          explanation="Fundamental analysis involves evaluating a company's financial statements, competitive advantages, industry position, and management to determine its intrinsic value. This approach focuses on factors like revenue growth, profit margins, debt levels, and cash flow to assess whether a stock is undervalued or overvalued. Fundamental analysts believe that the market may misprice a security in the short run but will eventually correct to reflect the stock's true value."
+          videoId="Xn7KWR9EOGQ"
+          explanation="Fundamental analysis involves evaluating a company's financial statements, competitive advantages, industry position, and management to determine its intrinsic value. This approach focuses on factors like revenue growth, profit margins, debt levels, and cash flow to assess whether a stock is undervalued or overvalued."
         />
 
         <VideoCard
           title="Technical Analysis Introduction"
           description="Using charts and patterns to predict price movements."
           videoId="eynxyoKgpng"
-          explanation="Technical analysis studies past market data, primarily price and volume, to forecast future price movements. Unlike fundamental analysis, technical analysis doesn't focus on a company's intrinsic value but instead uses chart patterns, trends, and statistical indicators to identify trading opportunities. Technical analysts believe that historical price action can indicate future price movement, as market psychology tends to repeat itself."
+          explanation="Technical analysis studies past market data, primarily price and volume, to forecast future price movements. Unlike fundamental analysis, technical analysis doesn't focus on a company's intrinsic value but instead uses chart patterns, trends, and statistical indicators to identify trading opportunities."
         />
 
         <VideoCard
           title="Reading Financial Statements"
           description="Understanding income statements, balance sheets, and cash flow statements."
-          videoId="XnSzD8vPP74"
-          explanation="Financial statements provide crucial information about a company's financial health. The income statement shows revenue, expenses, and profit over a specific period. The balance sheet provides a snapshot of assets, liabilities, and shareholders' equity at a point in time. The cash flow statement tracks how cash moves in and out of the business. Learning to read these statements helps investors understand a company's profitability, financial position, and operational efficiency."
+          videoId="DWWQgxX_ico"
+          explanation="Financial statements provide crucial information about a company's financial health. The income statement shows revenue, expenses, and profit over a specific period. The balance sheet provides a snapshot of assets, liabilities, and shareholders' equity at a point in time."
         />
 
         <VideoCard
           title="Key Financial Ratios"
           description="Important metrics for evaluating stocks."
-          videoId="ZyAgLJ_SMKc"
-          explanation="Financial ratios help investors compare companies and evaluate their financial health. Price-to-earnings (P/E) ratio compares a company's share price to its earnings per share. Price-to-book (P/B) ratio compares market value to book value. Debt-to-equity ratio measures financial leverage. Return on equity (ROE) shows how efficiently a company uses shareholders' equity. These and other ratios provide insights into valuation, profitability, efficiency, and financial stability."
+          videoId="f4gXw7wQx2E"
+          explanation="Financial ratios help investors compare companies and evaluate their financial health. Price-to-earnings (P/E) ratio compares a company's share price to its earnings per share. Price-to-book (P/B) ratio compares market value to book value."
         />
       </div>
     </>
@@ -433,29 +548,29 @@ function StrategiesTab() {
         <VideoCard
           title="Value Investing"
           description="Finding undervalued stocks with long-term potential."
-          videoId="npoyc_X5zO8"
-          explanation="Value investing, popularized by Benjamin Graham and Warren Buffett, involves buying stocks that appear underpriced relative to their intrinsic value. Value investors look for companies trading below their true worth due to temporary market pessimism or overlooked potential. They focus on strong fundamentals, low price-to-earnings ratios, high dividend yields, and strong balance sheets. This strategy requires patience as it may take time for the market to recognize a stock's true value."
+          videoId="Xn7KWR9EOGQ"
+          explanation="Value investing, popularized by Benjamin Graham and Warren Buffett, involves buying stocks that appear underpriced relative to their intrinsic value. Value investors look for companies trading below their true worth due to temporary market pessimism or overlooked potential."
         />
 
         <VideoCard
           title="Growth Investing"
           description="Identifying companies with above-average growth potential."
-          videoId="bLl0tNxRrI8"
-          explanation="Growth investing focuses on companies expected to grow earnings at an above-average rate compared to the market. Growth investors are willing to pay a premium for stocks with high growth potential, often resulting in higher price-to-earnings ratios. They look for companies with strong revenue growth, expanding market share, and innovative products or services. This strategy typically involves companies reinvesting profits rather than paying dividends, with the expectation of higher future returns."
+          videoId="eynxyoKgpng"
+          explanation="Growth investing focuses on companies expected to grow earnings at an above-average rate compared to the market. Growth investors are willing to pay a premium for stocks with high growth potential, often resulting in higher price-to-earnings ratios."
         />
 
         <VideoCard
           title="Dividend Investing"
           description="Building a portfolio of dividend-paying stocks."
-          videoId="8ZwTwjJrGYM"
-          explanation="Dividend investing focuses on stocks that pay regular dividends, providing investors with a steady income stream in addition to potential capital appreciation. Dividend investors often look for companies with a history of consistent dividend payments and increases (dividend aristocrats). This strategy is popular among retirees and income-focused investors. Dividend reinvestment plans (DRIPs) allow investors to automatically reinvest dividends to purchase additional shares, potentially accelerating portfolio growth through compounding."
+          videoId="zHOG2T9Mr_M"
+          explanation="Dividend investing focuses on stocks that pay regular dividends, providing investors with a steady income stream in addition to potential capital appreciation. Dividend investors often look for companies with a history of consistent dividend payments."
         />
 
         <VideoCard
           title="Index Fund Investing"
           description="The power of passive investing through index funds."
-          videoId="gvZSpET11ZY"
-          explanation="Index fund investing involves buying funds that track market indices like the S&P 500. This passive strategy aims to match market returns rather than beat them, based on the efficient market hypothesis that it's difficult to consistently outperform the market. Index funds offer broad diversification, low fees, and minimal research requirements. This approach, advocated by investors like John Bogle and Warren Buffett, is suitable for investors who want a simple, low-maintenance strategy with historically reliable long-term returns."
+          videoId="Xn7KWR9EOGQ"
+          explanation="Index fund investing involves buying funds that track market indices like the S&P 500. This passive strategy aims to match market returns rather than beat them, based on the efficient market hypothesis that it's difficult to consistently outperform the market."
         />
       </div>
     </>
@@ -474,29 +589,29 @@ function AdvancedTab() {
         <VideoCard
           title="Options Trading Basics"
           description="Understanding calls, puts, and options strategies."
-          videoId="7PM4rNDev1Q"
-          explanation="Options are contracts giving the buyer the right, but not the obligation, to buy (call) or sell (put) an asset at a predetermined price (strike price) before a specific date (expiration). Options can be used for speculation, income generation, hedging, or leverage. Key concepts include premium (the price paid for the option), intrinsic value, time value, and the Greeks (delta, gamma, theta, vega) which measure how option prices respond to various factors. Options involve higher risk and complexity than stock trading."
+          videoId="eynxyoKgpng"
+          explanation="Options are contracts giving the buyer the right, but not the obligation, to buy (call) or sell (put) an asset at a predetermined price (strike price) before a specific date (expiration). Options can be used for speculation, income generation, hedging, or leverage."
         />
 
         <VideoCard
           title="Shorting Stocks"
           description="How to profit from falling stock prices."
-          videoId="CAs_aX95tVQ"
-          explanation="Short selling involves borrowing shares from a broker, selling them at the current market price, and later buying them back (hopefully at a lower price) to return to the lender. The profit is the difference between the selling price and the repurchase price, minus borrowing costs. Short sellers profit from price declines but face theoretically unlimited risk if prices rise significantly. This strategy requires a margin account and is typically used by experienced investors for hedging or speculating on overvalued companies."
+          videoId="zHOG2T9Mr_M"
+          explanation="Short selling involves borrowing shares from a broker, selling them at the current market price, and later buying them back (hopefully at a lower price) to return to the lender. The profit is the difference between the selling price and the repurchase price, minus borrowing costs."
         />
 
         <VideoCard
           title="Tax-Efficient Investing"
           description="Strategies to minimize your investment taxes."
-          videoId="m_8QQmwvGpQ"
-          explanation="Tax-efficient investing aims to maximize after-tax returns by minimizing tax liabilities. Strategies include holding investments in tax-advantaged accounts (401(k)s, IRAs, HSAs), tax-loss harvesting (selling losing investments to offset gains), asset location (placing tax-inefficient investments in tax-advantaged accounts), and investing in tax-efficient funds (index funds with low turnover). Understanding the difference between short-term and long-term capital gains taxes and the tax treatment of different investment types can significantly impact long-term returns."
+          videoId="Xn7KWR9EOGQ"
+          explanation="Tax-efficient investing aims to maximize after-tax returns by minimizing tax liabilities. Strategies include holding investments in tax-advantaged accounts, tax-loss harvesting, asset location, and investing in tax-efficient funds."
         />
 
         <VideoCard
           title="Retirement Planning"
           description="Building a stock portfolio for retirement."
-          videoId="zdXgJpXQSJ4"
-          explanation="Retirement planning involves creating an investment strategy to provide income during retirement. Key considerations include time horizon (years until retirement), risk tolerance, desired retirement lifestyle, and expected longevity. The strategy typically evolves from growth-focused in early years to more income and preservation-focused near and during retirement. Understanding retirement accounts (401(k), IRA, Roth), Social Security benefits, withdrawal strategies (4% rule), and required minimum distributions (RMDs) is essential for effective retirement planning."
+          videoId="eynxyoKgpng"
+          explanation="Retirement planning involves creating an investment strategy to provide income during retirement. Key considerations include time horizon, risk tolerance, desired retirement lifestyle, and expected longevity."
         />
       </div>
     </>
@@ -504,7 +619,7 @@ function AdvancedTab() {
 }
 
 // Reusable Components
-function FAQItem({ question, answer }: { question: string; answer: React.ReactNode }) {
+function FAQItem({ question, answer }: FAQItemProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -547,7 +662,7 @@ function VideoCard({
           <iframe
             width="100%"
             height="100%"
-            src={`https://www.youtube.com/embed/${videoId}`}
+            src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
             title={title}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
             allowFullScreen
@@ -566,11 +681,6 @@ function VideoCard({
             {explanation}
           </div>
         )}
-      </div>
-      <div className="border-t border-gray-200 p-4">
-        <button className="w-full py-2 px-4 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-          Mark as Completed
-        </button>
       </div>
     </div>
   )

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Star, Trash2, TrendingUp, ArrowUpRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Search, Star, Trash2, TrendingUp } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface Stock {
   symbol: string;
@@ -20,6 +22,7 @@ function Watchlist() {
   const [error, setError] = useState<string | null>(null);
   const [symbolList, setSymbolList] = useState<string[]>([]);
   const [names, setNames] = useState<string[]>([]);
+  const navigate = useNavigate();
 
   // Get user data from localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -40,6 +43,7 @@ function Watchlist() {
   const fetchWatchlistSymbols = async (): Promise<string[]> => {
     if (!WatchlistId) {
       setError("No watchlist ID found");
+      toast.error("Please login to view your watchlist");
       return [];
     }
 
@@ -63,7 +67,9 @@ function Watchlist() {
       return data.watchlist?.Names || [];
     } catch (error) {
       console.error("Error fetching watchlist symbols:", error);
-      setError(error instanceof Error ? error.message : "Failed to fetch watchlist symbols");
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch watchlist symbols";
+      setError(errorMessage);
+      toast.error(errorMessage);
       return [];
     }
   };
@@ -96,6 +102,7 @@ function Watchlist() {
   const fetchStockData = async (symbols: string[]) => {
     if (symbols.length === 0) {
       setWatchlist([]);
+      toast.info("Your watchlist is empty. Add some stocks to get started!");
       return;
     }
 
@@ -116,11 +123,15 @@ function Watchlist() {
         const failedSymbols = symbols.filter(symbol => 
           !validStocks.some(stock => stock.symbol === symbol)
         );
-        setError(`Failed to load data for: ${failedSymbols.join(', ')}`);
+        const errorMessage = `Failed to load data for: ${failedSymbols.join(', ')}`;
+        setError(errorMessage);
+        toast.error(errorMessage);
       }
     } catch (error) {
       console.error("Error fetching stock data:", error);
-      setError(error instanceof Error ? error.message : "Failed to fetch stock data");
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch stock data";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -163,12 +174,12 @@ function Watchlist() {
     } catch (error) {
       console.error('Error searching stocks:', error);
       setSearchResults([]);
+      toast.error("Failed to search stocks. Please try again.");
     }
   };
 
   const removeFromWatchlist = async (symbol: string) => {
     try {
-      console.log(`Removing ${symbol} from watchlist`);
       const response = await fetch(
         `${import.meta.env.VITE_BACKEND_URL}/stocks/remove`,
         {
@@ -188,14 +199,17 @@ function Watchlist() {
       // Update both symbol list and watchlist
       setSymbolList(prev => prev.filter(s => s !== symbol));
       setWatchlist(prev => prev.filter(stock => stock.symbol !== symbol));
+      toast.success(`${symbol} removed from watchlist successfully!`);
     } catch (error) {
       console.error('Error removing stock:', error);
-      setError(error instanceof Error ? error.message : 'Failed to remove stock');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove stock';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
   const openStockDetails = (symbol: string) => {
-    console.log(`Opening details for ${symbol}`);
+    navigate(`/stocks/${symbol}`);
   };
 
   return (
@@ -316,7 +330,7 @@ function Watchlist() {
                             className="p-1 md:p-2 hover:bg-indigo-50 rounded-lg transition-colors"
                             title="View Details"
                           >
-                            <ArrowUpRight size={18} className="text-indigo-500" />
+                            <TrendingUp size={18} className="text-indigo-500" />
                           </button>
                           <button
                             onClick={() => removeFromWatchlist(stock.symbol)}

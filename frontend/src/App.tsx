@@ -1,9 +1,10 @@
 import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
-import About from './pages/About';
-import Contact from './pages/Contact';
+import AboutContact from './pages/AboutContact';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import StockList from './pages/StockList';
@@ -15,6 +16,7 @@ import { useAuthStore } from './store/authStore';
 import PrivateRoute from './components/PrivateRoute';
 import LearnPage from './pages/Learn';
 import StockDashboard from './pages/Holding';
+import Orders from './pages/Orders';
 
 function App() {
   const setUser = useAuthStore((state) => state.setUser);
@@ -32,8 +34,8 @@ function App() {
         <main className="container mx-auto px-4 py-4">
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<AboutContact />} />
+            <Route path="/contact" element={<AboutContact />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/learn" element={<LearnPage />} />
@@ -44,20 +46,29 @@ function App() {
             <Route
               path="/dashboard"
               element={
-                <PrivateRoute>
+                // <PrivateRoute>
                   <Dashboard />
-
-                </PrivateRoute>
+                // </PrivateRoute>
               }
-
             />
             <Route path="/stocks" element={<PrivateRoute><StockList /></PrivateRoute> } />
             <Route path="/watchlist" element={<PrivateRoute><Watchlist /></PrivateRoute> } />
-             
+            <Route path="/orders" element={<Orders /> } />
           </Routes>
-
         </main>
         <Footer/>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
       </div>
     </Router>
   );

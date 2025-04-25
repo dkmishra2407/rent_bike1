@@ -14,7 +14,7 @@ interface Stock {
 
 const StockList = () => {
   const defaultStockSymbols = [
-    "IRFC", "IRCTC", "ADANIENT", "TATATECH", "SBIN", "POONAWALA", "AVL",
+    "IRFC", "IRCTC", "ADANIENT", "TATATECH", "SBIN","AVL",
     "IEX", "VPRPL", "AUBANK", "INFY", "ICICIBANK", "KOTAKBANK", "BAJAJFINSV", "BHARTIARTL",
     "ITC", "WIPRO", "MARUTI", "LT"
   ];
@@ -25,8 +25,9 @@ const StockList = () => {
   const [searchResults, setSearchResults] = useState<Stock[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>([]);
+  const [addingToWatchlist, setAddingToWatchlist] = useState<string | null>(null);
 
-  // Fetch initial stock data
+  // Fetch initial stock data and watchlist
   useEffect(() => {
     const fetchStockData = async () => {
       setLoading(true);
@@ -34,7 +35,6 @@ const StockList = () => {
         const stockDataPromises = defaultStockSymbols.map(async (symbol) => {
           const response = await fetch(`${import.meta.env.VITE_FLASK_BACKEND_URL}/api/stock-quote/${symbol}`);
           const data = await response.json();
-          // const currentPrice = data.intraDayHighLow?.value || data.lastPrice || data.Price
           return {
             symbol,
             name: data.name || symbol,
@@ -46,8 +46,52 @@ const StockList = () => {
 
         const stockData = await Promise.all(stockDataPromises);
         setStocks(stockData);
+
+        // Fetch user's watchlist
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user.WatchlistId) {
+          const watchlistResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/stocks/getwatchlist/${user.WatchlistId}`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem("token")}`
+            }
+          });
+          
+          if (watchlistResponse.ok) {
+            const watchlistData = await watchlistResponse.json();
+            // Handle the watchlist data based on its structure
+            if (watchlistData && typeof watchlistData === 'object') {
+              if (Array.isArray(watchlistData)) {
+                // If it's an array, map directly
+                setWatchlist(watchlistData.map((item: any) => item.symbol || item.stockName));
+              } else if (watchlistData.watchlist && Array.isArray(watchlistData.watchlist)) {
+                // If it has a watchlist property that's an array
+                setWatchlist(watchlistData.watchlist.map((item: any) => item.symbol || item.stockName));
+              } else if (watchlistData.stocks && Array.isArray(watchlistData.stocks)) {
+                // If it has a stocks property that's an array
+                setWatchlist(watchlistData.stocks.map((item: any) => item.symbol || item.stockName));
+              } else if (watchlistData.symbols && Array.isArray(watchlistData.symbols)) {
+                // If it has a symbols property that's an array
+                setWatchlist(watchlistData.symbols);
+              } else {
+                // If none of the above, try to extract symbols from the object
+                const symbols = Object.keys(watchlistData).filter(key => 
+                  typeof watchlistData[key] === 'string' && 
+                  watchlistData[key].length > 0
+                );
+                setWatchlist(symbols);
+              }
+            } else {
+              console.warn("Unexpected watchlist data format:", watchlistData);
+              setWatchlist([]);
+            }
+          } else {
+            console.error("Failed to fetch watchlist:", await watchlistResponse.text());
+            setWatchlist([]);
+          }
+        }
       } catch (error) {
-        console.error("Error fetching stock data:", error);
+        console.error("Error fetching data:", error);
+        toast.error("Error loading stock data");
       }
       setLoading(false);
     };
@@ -89,16 +133,20 @@ const StockList = () => {
 
   // Add to watchlist
   const addToWatchlist = async (symbol: string) => {
-    try {
+    // First check if already in watchlist
+    if (watchlist.includes(symbol)) {
+      toast.info(`${symbol} is already in your watchlist`);
+      return;
+    }
 
-      console.log("Adding to watchlist:", symbol);
-      // Get user data from localStorage
+    setAddingToWatchlist(symbol);
+    try {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       const watchlistId = user.WatchlistId;
   
       if (!watchlistId) {
-        console.log("No watchlist ID found in user data:", user);
-        toast.error("No watchlist found. Please login again.");
+        toast.error("Please login to add stocks to your watchlist");
+        setAddingToWatchlist(null);
         return;
       }
   
@@ -106,32 +154,49 @@ const StockList = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem("token")}` // Include if using auth
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
         body: JSON.stringify({ 
-          WatchlistId: watchlistId, // Note the capitalization if the API expects it
-          stockName: symbol        // Or use symbol if that's what the API expects
-          // OR if the API expects "symbol" instead of "stockName":
-          // symbol: symbol
+          WatchlistId: watchlistId,
+          stockName: symbol
         }),
       });
   
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        console.error("Error parsing response:", e);
+        data = { message: "Error processing response" };
+      }
   
       if (response.ok) {
-        // Update local state if needed
-        setWatchlist([...watchlist, symbol]);
-        toast.success(`${symbol} added to watchlist!`);
+        // Update local watchlist state
+        setWatchlist(prev => [...prev, symbol]);
+        toast.success(`${symbol} added to watchlist successfully!`);
+      } else if (response.status === 404) {
+        toast.error("Watchlist not found. Please try again later.");
+      } else if (response.status === 409 || data.msg?.includes("Stock already in watchlist")) {
+        // Don't update the watchlist state or change the icon
+        toast.info(`${symbol} is already in your watchlist`);
       } else {
         toast.error(data.message || "Failed to add to watchlist");
       }
     } catch (error) {
       console.error("Error adding to watchlist:", error);
-      toast.error("Error adding to watchlist");
+      toast.error("Error adding to watchlist. Please try again.");
+    } finally {
+      setAddingToWatchlist(null);
     }
   };
+
   // Display stocks based on search or default
   const displayStocks = isSearching || searchTerm ? searchResults : stocks;
+
+  // Function to check if a stock is in watchlist
+  const isInWatchlist = (symbol: string) => {
+    return watchlist.includes(symbol);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -223,34 +288,43 @@ const StockList = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addToWatchlist(stock.symbol);
-                          console.log("Add to watchlist clicked for:", stock.symbol);
-                        
-                        }}
-                        disabled={watchlist.includes(stock.symbol)}
-                        className={`p-2 rounded-full ${watchlist.includes(stock.symbol) 
-                          ? 'bg-green-100 text-green-600 cursor-not-allowed' 
-                          : 'bg-blue-100 text-blue-600 hover:bg-blue-200 cursor-pointer'}`}
-                        title={watchlist.includes(stock.symbol) ? "Already in watchlist" : "Add to watchlist"}
-                        style={{ pointerEvents: 'auto' }}
-                      >
-                        {watchlist.includes(stock.symbol) ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Plus className="h-4 w-4" />
-                        )}
-                      </button>
-                    </td>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            addToWatchlist(stock.symbol);
+                          }}
+                          disabled={watchlist.includes(stock.symbol) || addingToWatchlist === stock.symbol}
+                          className={`p-2 rounded-full ${
+                            watchlist.includes(stock.symbol)
+                              ? 'bg-green-100 text-green-600 cursor-not-allowed'
+                              : addingToWatchlist === stock.symbol
+                              ? 'bg-gray-100 text-gray-600 cursor-not-allowed'
+                              : 'bg-blue-100 text-blue-600 hover:bg-blue-200 cursor-pointer'
+                          }`}
+                          title={
+                            watchlist.includes(stock.symbol)
+                              ? "Already in watchlist"
+                              : addingToWatchlist === stock.symbol
+                              ? "Adding to watchlist..."
+                              : "Add to watchlist"
+                          }
+                        >
+                          {watchlist.includes(stock.symbol) ? (
+                            <Check className="h-4 w-4" />
+                          ) : addingToWatchlist === stock.symbol ? (
+                            <div className="h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4" />
+                          )}
+                        </button>
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                      {isSearching ? 'Searching...' : 'No stocks found'}
+                      No stocks found
                     </td>
                   </tr>
                 )}

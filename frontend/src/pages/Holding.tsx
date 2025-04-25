@@ -1,8 +1,8 @@
-
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, DollarSign, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface Stock {
   id: string;
@@ -29,17 +29,32 @@ const StockDashboard = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const user = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("user") || '{}') : null;
-  const HoldingId = user?.HoldingId || null;
+  const [toastId, setToastId] = useState<any>(null);
+  const [isFetching, setIsFetching] = useState(false);
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const HoldingId = user?.HoldingId;
+  const ws = useRef<WebSocket | null>(null);
+
+  const showToast = (message: string, type: 'info' | 'success' | 'warning' | 'error', autoClose: number = 3000) => {
+    if (toastId) {
+      toast.dismiss(toastId);
+    }
+    const id = toast[type](message, { autoClose });
+    setToastId(id);
+  };
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchHoldings = async () => {
+      if (isFetching) return;
+      
       try {
+        setIsFetching(true);
         setLoading(true);
         
         // First fetch the holdings
-        const holdingsResponse = await fetch(`https://growup-ffp3.onrender.com/holding/getholding/${HoldingId}`);
+        const holdingsResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/holding/getholding/${HoldingId}`);
         if (!holdingsResponse.ok) throw new Error('Failed to fetch holdings');
         const holdingsData = await holdingsResponse.json();
 
@@ -66,6 +81,9 @@ const StockDashboard = () => {
               };
             } catch (err) {
               console.error(`Error fetching quote for ${holding.Symbol}:`, err);
+              if (isMounted) {
+                showToast(`Could not fetch current price for ${holding.Symbol}`, 'warning', 3000);
+              }
               return {
                 id: HoldingId,
                 name: holding.Name,
@@ -80,6 +98,8 @@ const StockDashboard = () => {
           })
         );
 
+        if (!isMounted) return;
+
         // Calculate derived values
         const completeStocks = stocksWithPrices.map(stock => ({
           ...stock,
@@ -89,11 +109,54 @@ const StockDashboard = () => {
 
         setStocks(completeStocks);
         setError(null);
+
+        // Connect to WebSocket for real-time updates
+        ws.current = new WebSocket(`${import.meta.env.VITE_FLASK_BACKEND_URL.replace('http', 'ws')}/ws`);
+
+        ws.current.onopen = () => {
+          // Subscribe to all stock symbols
+          completeStocks.forEach(stock => {
+            ws.current?.send(JSON.stringify({ action: "subscribe", symbol: stock.symbol }));
+          });
+        };
+
+        ws.current.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.T === "q") {
+            setStocks(prevStocks => 
+              prevStocks.map(stock => 
+                stock.symbol === data.S 
+                  ? { 
+                      ...stock, 
+                      currentPrice: data.lastPrice,
+                      change: data.change,
+                      changePercent: data.pChange,
+                      value: data.lastPrice * stock.quantity,
+                      profit: (data.lastPrice - stock.basePrice) * stock.quantity
+                    }
+                  : stock
+              )
+            );
+          }
+        };
+
+        ws.current.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+
+        ws.current.onclose = () => {
+          console.log("WebSocket connection closed");
+        };
+
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-        console.error("Failed to fetch holdings:", err);
+        if (!isMounted) return;
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        setError(errorMessage);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+          setIsFetching(false);
+        }
       }
     };
 
@@ -101,7 +164,18 @@ const StockDashboard = () => {
       fetchHoldings();
     } else {
       setLoading(false);
+      showToast("Please login to view your holdings", 'warning', 3000);
     }
+
+    return () => {
+      isMounted = false;
+      if (toastId) {
+        toast.dismiss(toastId);
+      }
+      if (ws.current) {
+        ws.current.close();
+      }
+    };
   }, [HoldingId]);
 
   const summary = stocks.reduce(

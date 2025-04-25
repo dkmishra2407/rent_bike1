@@ -41,7 +41,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     }
 
     const { user, token } = data
-
+    localStorage.setItem("user", JSON.stringify(user));
+    localStorage.setItem("token", token);
     // Save to Zustand and localStorage
     setAuth(user, token)
 

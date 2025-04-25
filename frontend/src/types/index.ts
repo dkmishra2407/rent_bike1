@@ -3,6 +3,10 @@ export interface User {
   email: string;
   name: string;
   token: string;
+  Balance: number;
+  HoldingId: string;
+  WatchlistId: string;
+  ExchangeId: string;
 }
 
 export interface Stock {

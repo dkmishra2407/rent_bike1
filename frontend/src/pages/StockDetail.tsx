@@ -2,24 +2,66 @@ import axios from 'axios';
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+
+interface StockData {
+  lastPrice: number;
+  previousClose: number;
+  change: number;
+  pChange: number;
+  open: number;
+  intraDayHighLow: {
+    max: number;
+    min: number;
+  };
+  weekHighLow: {
+    max: number;
+    min: number;
+    maxDate: string;
+    minDate: string;
+  };
+  vwap: number;
+  close: number;
+  lowerCP: string;
+  upperCP: string;
+  pPriceBand: string;
+  basePrice: number;
+  ieq: string;
+  iNavValue: number;
+  tickSize: number;
+  stockIndClosePrice: number;
+  checkINAV: boolean;
+  marketStatus: string;
+  advances: number;
+  declines: number;
+  unchanged: number;
+  indexSymbol: string;
+  symbol: string;
+}
+
+interface OrderStatus {
+  success: boolean;
+  message: string;
+  details?: any;
+}
 
 const StockDetails = () => {
   const { symbol: paramSymbol } = useParams();
   const [symbol, setSymbol] = useState('');
-  const [stockData, setStockData] = useState(null);
+  const [stockData, setStockData] = useState<StockData | null>(null);
   const [graphData, setGraphData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState('1d');
   const [quantity, setQuantity] = useState(1);
   const [orderType, setOrderType] = useState('MARKET'); // MARKET or LIMIT
   const [limitPrice, setLimitPrice] = useState('');
   const [isBuying, setIsBuying] = useState(false);
   const [isSelling, setIsSelling] = useState(false);
-  const [orderStatus, setOrderStatus] = useState(null);
+  const [orderStatus, setOrderStatus] = useState<OrderStatus | null>(null);
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const [userBalance, setUserBalance] = useState(user?.Balance || 0);
-  const ws = useRef(null);
+  const ws = useRef<WebSocket | null>(null);
 
   const [status, setStatus] = useState("Connecting...");
 
@@ -53,34 +95,34 @@ const StockDetails = () => {
         setLoading(false);
 
         // Connect to WebSocket
-    //     ws.current = new WebSocket("ws://localhost:8000/ws");
+        ws.current = new WebSocket(`${import.meta.env.VITE_FLASK_BACKEND_URL.replace('http', 'ws')}/ws`);
 
-    //     ws.current.onopen = () => {
-    //       setStatus("Connected");
-    //       ws.current.send(JSON.stringify({ action: "subscribe", symbol }));
-    //     };
+        ws.current.onopen = () => {
+          setStatus("Connected");
+          ws.current?.send(JSON.stringify({ action: "subscribe", symbol }));
+        };
 
-    //     ws.current.onmessage = (event) => {
-    //       const data = JSON.parse(event.data);
-    //       if (data.T === "q" && data.S === symbol) {
-    //         console.log("data from websocket", data);
-    //         setStockData(data);
-    //         setLoading(false);
-    //       } else if (data.error) {
-    //         setError(data.error);
-    //         setLoading(false);
-    //       }
-    //     };
+        ws.current.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.T === "q" && data.S === symbol) {
+            console.log("data from websocket", data);
+            setStockData(data);
+            setLoading(false);
+          } else if (data.error) {
+            setError(data.error);
+            setLoading(false);
+          }
+        };
 
-    //     ws.current.onerror = () => {
-    //       setStatus("Connection error");
-    //     };
+        ws.current.onerror = () => {
+          setStatus("Connection error");
+        };
 
-    //     ws.current.onclose = () => {
-    //       setStatus("Disconnected");
-    //     };
+        ws.current.onclose = () => {
+          setStatus("Disconnected");
+        };
 
-    //     // Fetch graph data
+        // Fetch graph data
         try {
           const response = await fetch(
             `${import.meta.env.VITE_FLASK_BACKEND_URL}/api/graph-data/${symbol}`
@@ -103,6 +145,15 @@ const StockDetails = () => {
 
     fetchInitialData();
 
+    // Cleanup function
+    return () => {
+      if (ws.current) {
+        // Unsubscribe from the symbol before closing
+        ws.current.send(JSON.stringify({ action: "unsubscribe", symbol }));
+        ws.current.close();
+        ws.current = null;
+      }
+    };
   }, [symbol]);
 
 
@@ -133,12 +184,18 @@ const StockDetails = () => {
   const watchlist = user.WatchlistId    || [];
   const handleAddToWatchlist = async () => {
     try {
-      const response = await axios.post('https://growup-ffp3.onrender.com/stocks/addwatchlist', {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/stocks/addwatchlist`, {
         WatchlistId: watchlist,
         stockName: symbol
       });
       console.log('Added to watchlist:', response.data);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const msg = err.response?.data?.msg || err.message;
+        toast.error(msg);
+      } else {
+        toast.error('Failed to add to watchlist');
+      }
       console.error('Failed to add to watchlist:', err);
     }
   };
@@ -159,33 +216,33 @@ const StockDetails = () => {
       setOrderStatus(null);
   
       // Get user info from local storage
-      
       if (!user) {
         throw new Error('User not authenticated');
       }
   
-      // Generate unique IDs (you might want to use a proper UUID generator)
-      
-      
       // Prepare order data according to backend expectations
       const orderData = {
         symbol: symbol.toUpperCase(),
         quantity: parseInt(quantity),
         order_type: order_t,
         target_price: orderType === 'LIMIT' ? parseFloat(limitPrice) : stockData.intraDayHighLow.value,
-        Email: user.Email,  // Assuming your user object has email
+        Email: user.Email,
         OrderId: user.ExchangeId,
-        HoldingId: user.HoldingId   // Use existing or create new holding ID
+        HoldingId: user.HoldingId
       };
+
+      // Use environment variable for the backend URL
+      const backendUrl = import.meta.env.VITE_FLASK_BACKEND_URL || 'http://localhost:8000';
   
       const response = await axios.post(
-        "http://192.168.141.176:5000/api/place-order",
+        `${backendUrl}/api/place-order`,
         orderData,
         {
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'
-          }
+          },
+          timeout: 10000 // 10 second timeout
         }
       );
   
@@ -197,7 +254,6 @@ const StockDetails = () => {
   
       // Update local user balance if needed
       if (response.data.order) {
-        // You might want to fetch updated user data from backend instead
         const updatedUser = { ...user };
         if (response.data.order.order_type === 'BUY') {
           const cost = response.data.order.quantity * response.data.order.target_price;
@@ -206,15 +262,24 @@ const StockDetails = () => {
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
   
-      // Refresh user holdings or other data if needed
-      // await fetchUserHoldings();
-  
       console.log('Buy order response:', response.data);
     } catch (err) {
       console.error('Error placing buy order:', err);
+      let errorMessage = 'Failed to place buy order';
+      
+      if (err.code === 'ECONNABORTED') {
+        errorMessage = 'Request timed out. Please try again.';
+      } else if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (err.response) {
+        errorMessage = err.response.data?.error || err.response.data?.message || err.message;
+      } else {
+        errorMessage = err.message || 'An unknown error occurred';
+      }
+      
       setOrderStatus({ 
         success: false, 
-        message: err.response?.data?.error || err.message || 'Failed to place buy order'
+        message: errorMessage
       });
     } finally {
       setIsBuying(false);

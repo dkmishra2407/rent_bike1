@@ -94,9 +94,11 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100">
       {/* TradingView Widget */}
+      <div className="w-full overflow-hidden h-[40px] bg-white shadow-sm z-10 pointer-events-none">
+        <div id="tradingview-widget" className="w-full h-full" style={{ pointerEvents: 'none', cursor: 'default' }}></div>
+      </div>
       
-      <div className="max-w-7xl mx-auto">
-      <div id="tradingview-widget" className="mb-4" style={{ pointerEvents: "none" }}></div>
+      <div className="max-w-7xl mx-auto pt-[40px]">
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
@@ -262,10 +264,10 @@ const Home = () => {
             )}
           </div>
           
-          <div className="text-center mt-4 text-sm text-gray-500 flex items-center justify-center">
+          {/* <div className="text-center mt-4 text-sm text-gray-500 flex items-center justify-center">
             <Clock className="h-4 w-4 mr-1" />
             <span>Data updates every 1 minute - Last update: {new Date().toLocaleTimeString()}</span>
-          </div>
+          </div> */}
         </motion.div>
         
         <motion.div 
@@ -278,7 +280,10 @@ const Home = () => {
             <div>
               <h2 className="text-3xl font-bold mb-4">Ready to Become a Trading Pro?</h2>
               <p className="mb-6 text-blue-100">Join thousands of traders who are mastering the market with our risk-free platform. Start with $100,000 in virtual cash today.</p>
-              <button className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition">
+              <button 
+                onClick={() => navigate('/signup')}
+                className="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition"
+              >
                 Create Free Account
               </button>
             </div>

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { 
   Mail, 
   Phone, 
@@ -16,8 +17,16 @@ import {
   TrendingUp,
   BookOpen,
   User,
-  HelpCircle
+  HelpCircle,
+  Send,
+  X
 } from "lucide-react";
+
+interface Message {
+  text: string;
+  sender: 'user' | 'bot';
+  timestamp: Date;
+}
 
 const Footer = () => {
   const [email, setEmail] = useState("");
@@ -25,6 +34,36 @@ const Footer = () => {
   const [chatVisible, setChatVisible] = useState(false);
   const [chatMessage, setChatMessage] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [genAI, setGenAI] = useState<GoogleGenerativeAI | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Initialize Gemini API
+  useEffect(() => {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        const client = new GoogleGenerativeAI(apiKey);
+        setGenAI(client);
+        setApiError(null);
+      } catch (error) {
+        console.error('Error initializing Gemini API:', error);
+        setApiError('Failed to initialize chat service. Please check your API key.');
+      }
+    } else {
+      setApiError('API key not found. Please configure your Gemini API key.');
+    }
+  }, []);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   // Check scroll position to show/hide back to top button
   React.useEffect(() => {
@@ -45,12 +84,73 @@ const Footer = () => {
     }
   };
 
-  const handleChatSubmit = (e: React.FormEvent) => {
+  const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (chatMessage) {
-      // In a real app, you would handle the chat message here
-      alert(`Message received: ${chatMessage}`);
-      setChatMessage("");
+    if (!chatMessage.trim() || !genAI) return;
+
+    // Add user message
+    const userMessage: Message = {
+      text: chatMessage,
+      sender: 'user',
+      timestamp: new Date()
+    };
+    setMessages(prev => [...prev, userMessage]);
+    setChatMessage("");
+    setIsTyping(true);
+    setApiError(null);
+
+    try {
+      // Get the generative model with the correct model name
+      const model = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-pro-latest",
+        generationConfig: {
+          maxOutputTokens: 1000,
+          temperature: 0.7,
+          topP: 0.8,
+          topK: 40,
+        }
+      });
+
+      // Start a chat
+      const chat = model.startChat({
+        history: messages.map(msg => ({
+          role: msg.sender === 'user' ? 'user' : 'model',
+          parts: [{ text: msg.text }]
+        }))
+      });
+
+      // Get response from Gemini
+      const result = await chat.sendMessage(chatMessage);
+      const response = await result.response;
+      const text = response.text();
+
+      const botMessage: Message = {
+        text: text,
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } catch (error: any) {
+      console.error('Error:', error);
+      let errorMessage = 'An error occurred while processing your request.';
+      
+      if (error.message.includes('API key')) {
+        errorMessage = 'Invalid API key. Please check your configuration.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'Model not found. Please check the model name.';
+      } else if (error.message.includes('quota')) {
+        errorMessage = 'API quota exceeded. Please try again later.';
+      }
+      
+      setApiError(errorMessage);
+      const botMessage: Message = {
+        text: "I'm having trouble connecting. Please try again later or check your API configuration.",
+        sender: 'bot',
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, botMessage]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -132,17 +232,6 @@ const Footer = () => {
                   <span>growup@gmail.com</span>
                 </li>
               </ul>
-              <div className="mt-6">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setChatVisible(!chatVisible)}
-                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <MessageSquare size={16} className="mr-2" />
-                  <span>{chatVisible ? "Close Chat" : "Live Chat"}</span>
-                </motion.button>
-              </div>
             </div>
 
             {/* Newsletter */}
@@ -201,24 +290,85 @@ const Footer = () => {
         </div>
       </footer>
 
-      {/* Live Chat Popup */}
+      {/* Chat Button */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => setChatVisible(!chatVisible)}
+        className="fixed bottom-6 right-6 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50 flex items-center"
+      >
+        {chatVisible ? <X size={24} /> : <MessageSquare size={24} />}
+      </motion.button>
+
+      {/* Chat Window */}
       {chatVisible && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed bottom-24 right-6 w-80 bg-white rounded-lg shadow-2xl overflow-hidden z-50"
+          className="fixed bottom-24 right-6 w-96 bg-white rounded-lg shadow-2xl overflow-hidden z-50"
         >
-          <div className="bg-blue-600 text-white p-3 flex justify-between items-center">
-            <h3 className="font-semibold">Live Support</h3>
-            <button onClick={() => setChatVisible(false)} className="text-white hover:text-gray-200">
-              ✕
+          <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+            <div className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${genAI ? 'bg-green-400' : 'bg-red-400'}`}></div>
+              <h3 className="font-semibold">AI Trading Assistant</h3>
+            </div>
+            <button 
+              onClick={() => setChatVisible(false)} 
+              className="text-white hover:text-gray-200"
+            >
+              <X size={20} />
             </button>
           </div>
-          <div className="h-64 bg-gray-100 p-4 overflow-y-auto">
-            <div className="bg-blue-100 text-blue-800 p-3 rounded-lg rounded-tl-none mb-4 max-w-[80%]">
-              Hello! How can I help you with your trading today?
+          
+          {apiError && (
+            <div className="bg-red-100 text-red-700 p-2 text-sm">
+              {apiError}
             </div>
+          )}
+          
+          <div className="h-96 bg-gray-50 p-4 overflow-y-auto">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-gray-500">
+                <MessageSquare size={48} className="mb-4" />
+                <p className="text-center">Ask me anything about trading, stocks, or market analysis!</p>
+              </div>
+            ) : (
+              messages.map((message, index) => (
+                <div
+                  key={index}
+                  className={`mb-4 flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] p-3 rounded-lg ${
+                      message.sender === 'user'
+                        ? 'bg-blue-600 text-white rounded-br-none'
+                        : 'bg-gray-200 text-gray-800 rounded-bl-none'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                    <span className="text-xs opacity-70 mt-1 block">
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
+            {isTyping && (
+              <div className="flex justify-start mb-4">
+                <div className="bg-gray-200 text-gray-800 p-3 rounded-lg rounded-bl-none max-w-[80%]">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
+
           <form onSubmit={handleChatSubmit} className="p-3 border-t border-gray-200 flex">
             <input
               type="text"
@@ -226,12 +376,14 @@ const Footer = () => {
               onChange={(e) => setChatMessage(e.target.value)}
               placeholder="Type your message..."
               className="flex-1 bg-gray-100 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={!genAI || isTyping}
             />
             <button
               type="submit"
-              className="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700"
+              className="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!genAI || isTyping || !chatMessage.trim()}
             >
-              Send
+              <Send size={18} />
             </button>
           </form>
         </motion.div>
@@ -242,7 +394,7 @@ const Footer = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: showBackToTop ? 1 : 0 }}
         onClick={scrollToTop}
-        className="fixed bottom-6 right-6 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50"
+        className="fixed bottom-6 left-6 bg-blue-600 text-white p-3 rounded-full shadow-lg z-50"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
       >
