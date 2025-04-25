@@ -16,3 +16,4 @@ pandas
 fastapi
 uvicorn[standard]
 cachetools
+flask-sock
