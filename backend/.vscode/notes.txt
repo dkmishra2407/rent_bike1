@@ -1,0 +1,166 @@
+SETUP THE BACKEND
+CONNECTED THE DATABASE (MONGODB) -- mongoose
+----------------------------------------------------------------------------
+CREATED THE MODELS
+
+A Chat contains multiple Message documents.
+Each Message references its Chat and sender.
+The Chat model keeps track of its users and the latest message.
+
+CHAT MODEL :-
+Purpose: Represents a chat between users.
+Fields:
+    users: Array of user IDs (ObjectId). References the User model.
+    latestMessage: Stores the ID of the most recent message (ObjectId). References the Message model.
+
+Message Model (messageModel.ts)
+Purpose: Represents an individual message sent in a chat.
+Fields:
+    sender: User ID (ObjectId) of the message sender. References the User model.
+    chat: Chat ID (ObjectId) where the message was sent. References the Chat model.
+    content: The actual text of the message (string)
+    FIRST OF ALL CREATED THE CONFIG FILES FOR THE CLOUDINARY,MULTER,RAZORPAY
+
+ALSO CREATED MODEL FOR THE OTP USING WHICH WE CAN VERIFY THE OTP
+----------------------------------------------------------------------------
+ROUTES OF PROJECT 
+
+WRITTEN ROUTES FOR THE ADMIN,CHAT,HOST,MSG,OFFER,OTP..
+----------------------------------------------------------------------------
+AFTER THAT WE CREATED THE INTERFACES 
+FOR BOTH REPO & SERVICES
+
+SERVICES
+Purpose:
+Defines the business logic operations for the admin module.
+Methods:
+High-level actions like verifying users, blocking/unblocking, getting user/bike/order/feedback details.
+Methods may combine multiple repository calls, apply business rules, or handle data transformation.
+
+repository
+Purpose:
+Defines data access operations for the admin module.
+Methods:
+Low-level CRUD operations: fetch, update, delete, and query database entities (users, bikes, orders, feedback).
+No business logic—just direct interaction with the database.
+
+----------------------------------------------------------------------------
+
+
+OTP LOGIC 
+const otp = Math.floor(100000 + Math.random() * 900000);
+GENRATE THE OTP
+SEND USING THE EMAIL
+AND ALSO STORE THE LATEST OTP & TIME & SENDER EMAIL IN THE DATABASE
+AFTER THAT YOU CAN VERIFY
+
+BCRYPT.HASH()
+BCRYPT.COMPARE()
+----------------------------------------------------------------------------
+
+IN MULTER CONFIG WE WRITTEN :-
+
+Multer is a middleware for handling multipart/form-data, which is primarily used for uploading files in a Node.js + Express backend.
+
+1.CONFIGURING DISK STORAGE 
+2.VALIDATION OF THE DOC TYPE
+3.Set up multer middleware
+    const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: fileFilter,
+    });
+
+----------------------------------------------------------------------------
+
+extends Document
+
+BECAUSE OF THIS WE CAN GET MORE FUNCTION LIKE SAVE,POPULATE....
+
+HERE WE USED INTERFACES BECAUSE HERE WE HAVE TO PLAY BETWEEN DIFFERENT LEVELS HENCE WE CAN SEND IN THE FORM OF THE 
+WHOLE INTERFACES
+
+
+----------------------------------------------------------------------------
+
+WINSTON package
+---------------
+using winston we send log data to file,http,console
+The code you provided sets up a logging system using the winston logging library in a Node.js application. This is commonly used in backend development to manage logs effectively — for debugging, auditing, or monitoring application health.
+
+import { createLogger, format, transports } from 'winston';
+This line imports the required functions from the winston package:
+createLogger: Function to create a logger instance.
+format: Provides formatting tools (like timestamping, customizing log message structure).
+transports: Determines where and how logs are saved (console, file, HTTP, etc.).
+
+level: 'info'
+This sets the minimum log level to 'info'.
+Log levels in Winston (priority from highest to lowest severity):
+error
+warn
+info ← 🟢 Starts logging from here
+http
+verbose
+debug
+silly
+
+So only logs at level info, warn, error, etc., will be logged. Lower levels like debug or silly are ignored unless you reduce the level.
+
+🔹 format: format.combine(...)
+This configures the format of log messages using multiple formatting functions chained together via combine.
+
+🔸 format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' })
+Adds a timestamp to each log entry using the specified format (Year-Month-Day Hour:Minute:Second).
+
+🔸 format.printf(...)
+Customizes how the log message appears in the output (console or file).
+
+This function gets access to the level, message, and timestamp, and returns a string like this:
+[2025-07-20 13:45:12] INFO: Server started successfully
+It uses:
+
+return `[${timestamp}] ${level.toUpperCase()}: ${message}`;
+🔹 transports: [ ... ]
+This is an array that defines where logs are sent or stored.
+
+1️⃣ new transports.Console()
+Logs will be displayed on the console (e.g., stdout). Useful for local development and debugging.
+
+2️⃣ new transports.File({ filename: 'logs/error.log', level: 'error' })
+Logs with level error only will be written to logs/error.log.
+If an error occurs, this file will contain entries like:
+[2025-07-20 13:50:01] ERROR: Database connection failed
+
+3️⃣ new transports.File({ filename: 'logs/combined.log' })
+Logs with level info and above will be written to logs/combined.log. This includes:
+info
+warn
+error
+Note: This file includes all logs except those filtered out by level.
+
+✅ export default logger;
+Exports the logger object as the default export, so it can be imported and used in other files:
+import logger from './logger';
+logger.info('Server started');
+logger.error('Something went wrong');
+✅ Summary (What It Does)
+Creates a logger with structured log messages like:
+[2025-07-20 13:30:00] INFO: User logged in
+Logs:
+All levels from info and above to logs/combined.log
+Only error level to logs/error.log
+Everything to the console as well
+
+----------------------------------------------------------------------------
+POJO stands for:
+Plain Old Java Object
+It refers to a simple Java object that:
+Is not bound by any special restriction.
+Doesn’t extend or implement any special classes, interfaces, or annotations from a framework (like Spring, EJB, etc.).
+Is used to store data (like a model or entity class).
+Has private fields, with public getters and setters.
+----------------------------------------------------------------------------
+
+
+
